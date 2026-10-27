@@ -1,0 +1,1317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Find the shortest route for every chess piece. 60 free puzzles, from beginner to grandmaster.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Star Route: chess route puzzles">
+<meta property="og:description" content="Find the shortest route for every chess piece. 60 free puzzles, from beginner to grandmaster.">
+<meta property="og:url" content="https://JohnSchiff.github.io/star-route/">
+<meta property="og:image" content="https://JohnSchiff.github.io/star-route/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>html,body{margin:0}</style>
+<title>Star Route Chess</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: Lichess Learn style. Stage list | board | goal table; stacks to board-first on phones. Single dark theme, matching the board site look. */
+:root{
+  color-scheme:dark;
+  --bg:#161512; --bg-2:#262421; --bg-3:#302e2c; --bg-hover:#3a3835; --line:#404040;
+  --fg:#bababa; --fg-strong:#e6e6e6; --fg-dim:#8a8a8a;
+  --green:#629924; --green-hi:#759900; --blue:#3692e7; --red:#cc3333; --gold:#f5b022;
+  --sq-light:#f0d9b5; --sq-dark:#b58863;
+  --font:'Noto Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--font);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:20px 40px}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+img{display:block}
+[hidden]{display:none!important}
+.stage .info{display:grid;gap:1px;min-width:0}
+
+.learn{display:grid;grid-template-columns:240px minmax(0,1fr) 300px;grid-template-areas:"side board table";gap:24px;max-width:1400px;margin:0 auto;align-items:start}
+@media (max-width:1100px){.learn{grid-template-columns:minmax(0,1fr) 300px;grid-template-areas:"board table" "side table"}}
+@media (max-width:760px){.learn{grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "table" "side";gap:14px}}
+
+/* ---------- side: stage list ---------- */
+.side{grid-area:side;min-width:0}
+.side h1{font-size:22px;font-weight:400;color:var(--fg-strong);margin:0 0 2px}
+.side .sub{color:var(--fg-dim);font-size:13px;margin:0 0 14px}
+.cat{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-dim);margin:16px 0 6px;padding-left:4px}
+.stages{display:grid;gap:4px}
+.stage{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center;padding:8px 10px;border-radius:4px;background:var(--bg-2);text-align:left;width:100%}
+.stage:hover{background:var(--bg-hover)}
+.stage.active{background:var(--green);color:#fff}
+.stage.active .meta{color:rgba(255,255,255,.85)}
+.stage img{width:44px;height:44px}
+.stage .nm{font-size:16px;line-height:1.2;color:var(--fg-strong)}
+.stage.active .nm{color:#fff}
+.stage .meta{font-size:12px;color:var(--fg-dim);display:flex;justify-content:space-between;gap:6px}
+.bar{height:4px;background:var(--bg-3);border-radius:2px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--green);border-radius:2px}
+.stage.active .bar{background:rgba(0,0,0,.25)}
+.stage.active .bar i{background:#fff}
+.side-foot{margin-top:18px;display:grid;gap:8px;font-size:12px;color:var(--fg-dim)}
+.side-foot label{display:flex;align-items:center;gap:8px;cursor:pointer}
+
+/* ---------- board ---------- */
+.board-area{grid-area:board;min-width:0;display:flex;justify-content:center}
+.cg-wrap{position:relative;width:100%;max-width:min(680px,calc(100vh - 60px));aspect-ratio:1;container-type:inline-size;user-select:none;-webkit-user-select:none;touch-action:none;box-shadow:0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12)}
+.cg-board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr)}
+.sq{position:relative;background:var(--sq-light)}
+.sq.d{background:var(--sq-dark)}
+.sq::before{content:"";position:absolute;inset:0;pointer-events:none}
+.sq.last::before{background:rgba(155,199,0,.41)}
+.sq.sel::before{background:rgba(20,85,30,.5)}
+.sq.danger::before{background:radial-gradient(ellipse at center,rgba(204,51,51,.55) 0%,rgba(204,51,51,.35) 55%,rgba(204,51,51,.2) 100%)}
+.sq.guarded::before{background:radial-gradient(ellipse at center,rgba(204,51,51,.85) 0%,rgba(204,51,51,.45) 70%,rgba(204,51,51,0) 100%)}
+.sq.dest::after{content:"";position:absolute;inset:0;background:radial-gradient(rgba(20,85,30,.5) 19%,rgba(0,0,0,0) 20%);pointer-events:none;z-index:3}
+.sq.dest.oc::after{background:radial-gradient(transparent 0%,transparent 79%,rgba(20,85,0,.3) 80%)}
+.sq.dest:hover::after,.sq.dest.over::after{background:rgba(20,85,30,.3)}
+.sq.hint::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 .7cqw var(--blue);z-index:3;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:inset 0 0 0 1.4cqw var(--blue)}}
+.sq.shake{animation:shake .3s}
+@keyframes shake{25%,75%{transform:translateX(-3%)}50%{transform:translateX(3%)}}
+.sq img{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.star{position:absolute;inset:14%;width:72%;height:72%;z-index:2;pointer-events:none;display:block}
+.star.got{animation:pop .45s ease-out forwards}
+@keyframes pop{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.8);opacity:0}}
+.coord{position:absolute;font-size:2.1cqw;font-weight:700;line-height:1;pointer-events:none;z-index:1}
+.coord.r{top:4%;right:5%}
+.coord.f{bottom:4%;left:5%}
+.sq .coord{color:var(--sq-dark)}
+.sq.d .coord{color:var(--sq-light)}
+.hero{position:absolute;left:0;top:0;width:12.5%;height:12.5%;z-index:5;pointer-events:none;transform:translate(calc(var(--c)*100%),calc(var(--r)*100%));transition:transform .2s ease-in-out;cursor:grab}
+.hero img{width:100%;height:100%}
+.hero.dragging{transition:none;z-index:11;transform:translate(var(--dx),var(--dy)) scale(1.15)}
+.board-msg{position:absolute;inset:0;display:grid;place-items:center;z-index:12;pointer-events:none}
+.board-msg span{font-size:9cqw;font-weight:700;color:#fff;text-shadow:0 0 1cqw rgba(0,0,0,.6),0 .4cqw .1cqw rgba(0,0,0,.7);animation:msg 1.6s ease-out forwards}
+@keyframes msg{0%{transform:scale(.4);opacity:0}15%{transform:scale(1.1);opacity:1}25%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(1.05)}}
+@media (prefers-reduced-motion: reduce){.hero{transition:none}.star.got{animation:none;opacity:0}.sq.hint::after{animation:none}}
+
+/* ---------- table: goal + levels ---------- */
+.table{grid-area:table;min-width:0;display:grid;gap:12px}
+.box{background:var(--bg-2);border-radius:4px;box-shadow:0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)}
+.goal-head{display:flex;gap:12px;align-items:center;padding:14px 16px 10px}
+.goal-head img{width:58px;height:58px;flex:none}
+.goal-head h2{margin:0;font-size:22px;font-weight:400;color:var(--fg-strong);line-height:1.15}
+.goal-head p{margin:2px 0 0;color:var(--fg-dim);font-size:13px}
+.goal{margin:0;padding:12px 16px 14px;border-top:1px solid var(--line);font-size:15px;color:var(--fg-strong);min-height:4.4em}
+.goal.warn{color:#e88}
+.goal.win{color:#9fd36c}
+.score{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line)}
+.score div{padding:10px 12px;display:grid;gap:2px;text-align:center}
+.score div + div{border-left:1px solid var(--line)}
+.score .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-dim)}
+.score .v{font-size:26px;font-weight:700;color:var(--fg-strong);line-height:1.1;font-variant-numeric:tabular-nums}
+.score .v.over{color:#e57373}
+.score .v.par{color:#9fd36c}
+.result{border-top:1px solid var(--line);padding:14px 16px;display:grid;gap:10px;justify-items:center;text-align:center}
+.result .rstars{display:flex;gap:6px}
+.result .rstars svg{width:40px;height:40px}
+.result h3{margin:0;font-size:20px;font-weight:700;color:var(--fg-strong)}
+.result p{margin:0;color:var(--fg)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.button{background:var(--bg-3);color:var(--fg-strong);padding:8px 16px;border-radius:3px;font-weight:500;box-shadow:0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12)}
+.button:hover{background:var(--bg-hover)}
+.button.green{background:var(--green);color:#fff}
+.button.green:hover{background:var(--green-hi)}
+.button:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;border-top:1px solid var(--line);background:var(--line);border-radius:0 0 4px 4px;overflow:hidden}
+.actions button{background:var(--bg-2);padding:9px 4px;color:var(--fg);display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.25}
+.actions button:hover:not(:disabled){background:var(--bg-hover);color:var(--fg-strong)}
+.actions button:disabled{opacity:.35;cursor:not-allowed}
+
+.lvl-box{padding:12px 14px 14px}
+.tier-tabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.tier-tabs button{padding:4px 9px;border-radius:3px;font-size:12px;background:var(--bg-3);color:var(--fg)}
+.tier-tabs button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.tier-desc{margin:0 0 10px;font-size:12px;color:var(--fg-dim)}
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:5px;max-height:244px;overflow-y:auto;padding:2px}
+.lv{height:36px;border-radius:50%;aspect-ratio:1;background:var(--bg-3);color:var(--fg);font-size:13px;font-weight:700;position:relative;justify-self:center;width:36px;font-variant-numeric:tabular-nums}
+.lv:hover:not(:disabled){background:var(--bg-hover)}
+.lv.done{background:#3b4d26;color:#cfe8b0}
+.lv.perfect{background:var(--green);color:#fff}
+.lv.cur{box-shadow:0 0 0 2px var(--blue);}
+.lv:disabled{opacity:.3;cursor:not-allowed}
+.lv .s{position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);display:flex;gap:0}
+.lv .s svg{width:9px;height:9px}
+
+.sheet{padding:10px 14px 12px}
+.sheet h4{margin:0 0 6px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-dim)}
+.sheet ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:2px 8px;font-variant-numeric:tabular-nums;font-size:14px}
+.sheet li{display:flex;gap:5px}
+.sheet .n{color:var(--fg-dim);min-width:1.7em;text-align:right}
+.sheet .m{color:var(--fg-strong)}
+.sheet li.got .m{color:var(--gold)}
+.sheet .empty{grid-column:1/-1;color:var(--fg-dim);font-size:13px}
+
+.legend{padding:10px 14px 12px;display:grid;gap:6px;font-size:13px;border-top:1px solid var(--line)}
+.legend div{display:flex;gap:10px;align-items:center}
+.legend .ic{width:26px;height:26px;flex:none;border-radius:2px;position:relative;background:var(--sq-light)}
+.legend .ic img,.legend .ic svg{position:absolute;inset:0;width:100%;height:100%}
+.legend .ic.red{background:radial-gradient(ellipse at center,rgba(204,51,51,.6),rgba(204,51,51,.3)),var(--sq-dark)}
+.credit{font-size:11px;color:var(--fg-dim);margin:0}
+/* phones: piece picker as an icon row on top, board next, extra buttons at the bottom */
+@media (max-width:760px){
+  .learn{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+  .side{display:contents}
+  .side h1{order:0;margin:0;font-size:20px}
+  .side .sub,.side .cat{display:none}
+  .stages{order:1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+  .stage{grid-template-columns:1fr;justify-items:center;gap:2px;padding:6px 2px}
+  .stage img{width:34px;height:34px}
+  .stage .meta,.stage .bar{display:none}
+  .stage .nm{font-size:11px;text-align:center}
+  .board-area{order:2}
+  .table{order:3}
+  .side-btns{order:4;margin-top:0}
+  .side-foot{order:5;margin-top:0}
+}
+.web #coinBtn,.web #sideShop,.web #sideReview,.web .side-foot label:has(#unlockAll),.web .cost,.web #mTabs [data-tab="shop"],.web .demo-note{display:none!important}
+.web .side-btns{grid-template-columns:1fr}
+.reset-confirm{display:grid;gap:8px;padding:10px;border-radius:4px;background:var(--bg-2);color:var(--fg-strong);font-size:13px}
+.reset-confirm .btns{justify-content:flex-start}
+.reset-confirm .button{padding:6px 12px;font-size:13px}
+.auto-next{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-dim);cursor:pointer;user-select:none}
+.auto-next input{width:16px;height:16px;accent-color:var(--green)}
+
+/* ---------- coins, shop, report ---------- */
+.coins{margin-left:auto;align-self:flex-start;display:flex;align-items:center;gap:6px;padding:5px 11px 5px 6px;border-radius:999px;background:var(--bg-3);color:var(--fg-strong);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;flex:none}
+.coins:hover{background:var(--bg-hover)}
+.coins svg{width:22px;height:22px}
+.coins.bump{animation:cbump .55s}
+@keyframes cbump{30%{transform:scale(1.2)}}
+.cost{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;color:var(--fg-dim)}
+.cost svg{width:13px;height:13px}
+.cost .lk{color:var(--gold)}
+.side-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:14px}
+.side-btns .button{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 8px;font-size:13px}
+.side-btns svg{width:16px;height:16px}
+.lv.pay{opacity:.6}
+.lv .lk{position:absolute;top:-4px;right:-4px;width:15px;height:15px;color:var(--gold)}
+.lv .lk svg{width:100%;height:100%;display:block}
+.tier-tabs svg{width:11px;height:11px;margin-left:4px;vertical-align:-1px;color:var(--gold)}
+
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.66);display:grid;place-items:center;padding:16px}
+.mcard{background:var(--bg-2);border-radius:6px;width:min(580px,100%);max-height:calc(100vh - 32px);overflow-y:auto;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.m-top{display:flex;align-items:stretch;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg-2);z-index:2}
+.m-tabs{display:flex;flex:1}
+.m-tabs button{flex:1;padding:13px 8px;font-weight:500;color:var(--fg-dim);border-bottom:2px solid transparent}
+.m-tabs button[aria-pressed="true"]{color:var(--fg-strong);border-bottom-color:var(--blue)}
+.m-close{width:48px;font-size:22px;color:var(--fg-dim)}
+.m-close:hover{color:var(--fg-strong)}
+.m-body{padding:16px;display:grid;gap:14px}
+.pane{display:grid;gap:14px;min-width:0}
+.demo-note{margin:0;font-size:12px;color:var(--fg-dim);background:var(--bg-3);padding:8px 10px;border-radius:4px}
+.shop-note{margin:0;padding:10px 12px;border-radius:4px;background:rgba(54,146,231,.15);color:var(--fg-strong)}
+.wallet{display:flex;align-items:center;gap:10px;font-size:15px}
+.wallet svg{width:34px;height:34px}
+.wallet b{font-size:24px;color:var(--fg-strong);font-variant-numeric:tabular-nums}
+.econ{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.econ{grid-template-columns:1fr}}
+.econ h4{margin:0 0 4px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-dim)}
+.econ ul{margin:0;padding-left:18px;font-size:13px;display:grid;gap:2px}
+.items{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;background:var(--bg-3);border-radius:4px}
+.item.prem{background:#2f3b22;box-shadow:inset 0 0 0 1px var(--green)}
+.item .ico{width:44px;height:44px}
+.item .t{color:var(--fg-strong);font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item .tag{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:var(--gold);color:#2a1d00;padding:1px 6px;border-radius:3px}
+.item .d{font-size:12.5px;color:var(--fg)}
+.item .button{white-space:nowrap}
+.linkish{color:var(--blue);font-size:12px;text-decoration:underline;padding:0;justify-self:start}
+.toast{margin:0;padding:10px 12px;border-radius:4px;background:#2f3b22;color:#cfe8b0}
+.rep-wrap{position:relative;display:grid;gap:12px}
+.rep-scroll{overflow-x:auto}
+.rep{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.rep th{font-weight:500;text-align:left;color:var(--fg-dim);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rep td{padding:7px 8px;border-bottom:1px solid var(--bg-3);white-space:nowrap}
+.rep td.pc{display:flex;align-items:center;gap:6px;color:var(--fg-strong)}
+.rep td.pc img{width:24px;height:24px}
+.eff{display:flex;align-items:center;gap:7px}
+.eff .b{width:64px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden}
+.eff .b i{display:block;height:100%;background:var(--green)}
+.eff .b i.low{background:#d59020}
+.insight{margin:0;padding:10px 12px;background:var(--bg-3);border-radius:4px;color:var(--fg-strong)}
+.rep-foot{margin:0;font-size:12px;color:var(--fg-dim)}
+.locked .rep-scroll,.locked .insight{filter:blur(2.5px);opacity:.55;pointer-events:none;user-select:none}
+.paywall{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:10px;text-align:center;padding:16px}
+.paywall p{margin:0;color:var(--fg-strong);font-size:15px;max-width:34ch;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.ex-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)}
+
+/* ---------- 10-level row + review mode ---------- */
+.lvl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.lvl-head h4{margin:0;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-dim)}
+.lvl-head span{font-size:12px;color:var(--fg-dim)}
+.levels{grid-template-columns:repeat(5,1fr);max-height:none;overflow:visible;gap:10px 5px}
+.lvl-box .tier-desc{margin:10px 0 0}
+.side-btns .wide{grid-column:1/-1}
+.button.red{background:#8f2a2a;color:#fff}
+.button.red:hover{background:var(--red)}
+.pnum{position:absolute;top:4%;left:4%;z-index:6;min-width:3.4cqw;height:3.4cqw;padding:0 .7cqw;border-radius:1.7cqw;background:var(--blue);color:#fff;font-size:2.1cqw;font-weight:700;display:grid;place-items:center;line-height:1;pointer-events:none;box-shadow:0 .2cqw .5cqw rgba(0,0,0,.45)}
+.lvl-head{flex-wrap:wrap;gap:2px 10px}
+.rv-badge{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-radius:3px;background:var(--bg-3);color:var(--fg-dim)}
+.rv-badge.ok{background:var(--green);color:#fff}
+.rv-badge.flag{background:var(--red);color:#fff}
+.rv-explain{margin:0;padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--fg-dim)}
+.rv-sol{border-top:1px solid var(--line)}
+.rv-form{padding:12px 14px;border-top:1px solid var(--line);display:grid;gap:10px}
+.rv-form .btns{justify-content:flex-start}
+textarea{width:100%;resize:vertical;padding:8px 10px;border-radius:3px;border:1px solid var(--line);background:var(--bg);color:var(--fg-strong);font:inherit;font-size:13px}
+.rv-nav{grid-template-columns:1fr 1fr}
+.rv-grid{display:grid;gap:6px}
+.rv-row{display:grid;grid-template-columns:26px repeat(10,minmax(0,1fr));gap:4px;align-items:center}
+.rv-row img{width:26px;height:26px}
+.rv-chip{height:24px;border-radius:3px;background:var(--bg-3);font-size:11px;font-weight:700;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+.rv-chip:hover{background:var(--bg-hover)}
+.rv-chip.ok{background:var(--green);color:#fff}
+.rv-chip.flag{background:var(--red);color:#fff}
+.rv-chip.cur{box-shadow:0 0 0 2px var(--blue)}
+.rv-out-btns{justify-content:flex-start;margin-top:12px}
+#rvOut{margin-top:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.rv-data{margin:0;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--fg-strong)}
+</style>
+</head>
+<body>
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-star" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe26a"/><stop offset="1" stop-color="#f5a300"/></linearGradient>
+  </defs>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12.00 2.41 L15.05 8.81 L22.08 9.74 L16.94 14.62 L18.23 21.59 L12.00 18.21 L5.77 21.59 L7.06 14.62 L1.92 9.74 L8.95 8.81Z" fill="url(#g-star)" stroke="#b86e00" stroke-width="1.1" stroke-linejoin="round"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.2" fill="#f5b022" stroke="#a96200" stroke-width="1.4"/><circle cx="12" cy="12" r="7" fill="#ffc94a" stroke="#c98200" stroke-width="1"/><path d="M12 7.6l1.25 2.6 2.85.35-2.1 1.95.55 2.85L12 14l-2.55 1.35.55-2.85-2.1-1.95 2.85-.35z" fill="#a96200"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2" fill="currentColor"/><path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10h3.5v10zm6.25 0V4h3.5v16zM16.5 20v-7H20v7z" fill="currentColor"/></symbol>
+  <symbol id="i-star-off" viewBox="0 0 24 24"><path d="M12.00 2.41 L15.05 8.81 L22.08 9.74 L16.94 14.62 L18.23 21.59 L12.00 18.21 L5.77 21.59 L7.06 14.62 L1.92 9.74 L8.95 8.81Z" fill="#3a3835" stroke="#555" stroke-width="1.1" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="learn">
+  <aside class="side">
+    <h1>Star Route</h1>
+    <p class="sub" id="sideSub">Find the shortest route to every star.</p>
+    <div class="cat">Chess pieces</div>
+    <div class="stages" id="stages"></div>
+    <div class="side-btns">
+      <button class="button" id="sideShop"><svg viewBox="0 0 24 24"><use href="#i-coin"/></svg>Shop</button>
+      <button class="button" id="sideReport"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg>My progress</button>
+      <button class="button wide" id="sideReview"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg>Review puzzles</button>
+    </div>
+    <div class="side-foot">
+      <label><input type="checkbox" id="unlockAll"> Unlock every level</label>
+      <button class="linkish" id="resetBtn">Reset progress</button>
+      <div class="reset-confirm" id="resetConfirm" hidden>
+        <span>Delete all stars and level progress, and start from zero? Your coins are kept.</span>
+        <div class="btns"><button class="button red" id="resetYes">Yes, reset</button><button class="button" id="resetNo">Cancel</button></div>
+      </div>
+      <p class="credit">Pieces by Colin M.L. Burnett (<a href="LICENSES.txt" style="color:inherit">BSD license</a>).</p>
+    </div>
+  </aside>
+
+  <div class="board-area">
+    <div class="cg-wrap" id="wrap">
+      <div class="cg-board" id="board" role="grid" aria-label="Chessboard"></div>
+      <div class="hero" id="hero"><img id="heroImg" alt=""></div>
+      <div class="board-msg" id="boardMsg"></div>
+    </div>
+  </div>
+
+  <section class="table review" id="review" hidden>
+    <div class="box">
+      <div class="goal-head"><img id="rvIcon" alt=""><div><h2 id="rvTitle">Rook · Level 1</h2><p id="rvSub"></p><span class="rv-badge" id="rvBadge">Not reviewed</span></div></div>
+      <div class="score">
+        <div><span class="k">Par</span><span class="v par" id="rvPar"></span></div>
+        <div><span class="k">Nearest first</span><span class="v" id="rvGreedy"></span></div>
+        <div><span class="k">Best routes</span><span class="v" id="rvRoutes"></span></div>
+      </div>
+      <p class="rv-explain">Nearest first: moves needed if you always go to the closest star. Best routes: how many different routes reach par (1 means a single exact answer). Blue numbers on the board show the solver's route.</p>
+      <div class="sheet rv-sol"><h4>Solver's route</h4><ol id="rvSol"></ol></div>
+      <div class="rv-form">
+        <textarea id="rvNote" rows="2" placeholder="Note: what's wrong, or what to change"></textarea>
+        <div class="btns"><button class="button green" id="rvOk">Approve</button><button class="button red" id="rvFlag">Flag</button><button class="button" id="rvPlay">Play it</button></div>
+      </div>
+      <div class="actions rv-nav"><button id="rvPrev">← Previous</button><button id="rvNext">Next →</button></div>
+    </div>
+    <div class="box lvl-box">
+      <div class="lvl-head"><h4>Review progress</h4><span id="rvCount"></span></div>
+      <div class="rv-grid" id="rvGrid"></div>
+      <div class="btns rv-out-btns"><button class="button" id="rvCopy">Copy results</button><button class="button" id="rvExit">Back to the game</button></div>
+      <textarea id="rvOut" rows="6" readonly hidden></textarea>
+    </div>
+    <div class="box"><div class="sheet"><h4>Puzzle data</h4><pre class="rv-data" id="rvData"></pre></div></div>
+  </section>
+
+  <section class="table" id="table">
+    <div class="box">
+      <div class="goal-head"><img id="goalIcon" alt=""><div><h2 id="goalTitle">The rook</h2><p id="goalSub">Level 1 · Beginner</p></div><button class="coins" id="coinBtn" aria-label="Coins. Open the shop"><svg viewBox="0 0 24 24"><use href="#i-coin"/></svg><span id="coinCount">30</span></button></div>
+      <p class="goal" id="goal" aria-live="polite"></p>
+      <div class="score">
+        <div><span class="k">Stars</span><span class="v" id="stStars">0/0</span></div>
+        <div><span class="k">Moves</span><span class="v" id="stMoves">0</span></div>
+        <div><span class="k">Par</span><span class="v par" id="stPar">0</span></div>
+      </div>
+      <div class="result" id="result" hidden>
+        <div class="rstars" id="rStars"></div>
+        <h3 id="rHead">Perfect!</h3>
+        <p id="rLine"></p>
+        <div class="btns"><button class="button green" id="rNext">Next level</button><button class="button" id="rRetry">Retry</button><button class="button" id="rStay" hidden>Stay</button></div>
+        <button class="button" id="rWatch">Show the best route</button>
+        <label class="auto-next"><input type="checkbox" id="autoNext"> Go to the next level automatically</label>
+      </div>
+      <div class="actions">
+        <button id="bUndo">Undo</button><button id="bRestart">Restart</button><button id="bHint">Hint</button><button id="bRoute">Best route</button>
+      </div>
+    </div>
+
+    <div class="box lvl-box">
+      <div class="lvl-head"><h4>Levels</h4><span id="lvlCount"></span></div>
+      <div class="levels" id="levels"></div>
+      <p class="tier-desc" id="tierDesc"></p>
+    </div>
+
+    <div class="box">
+      <div class="sheet"><h4>Moves</h4><ol id="log"></ol></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="mcard" role="dialog" aria-modal="true" aria-label="Shop and progress report">
+    <div class="m-top">
+      <div class="m-tabs" id="mTabs"><button data-tab="shop">Shop</button><button data-tab="report">My progress</button></div>
+      <button class="m-close" id="mClose" aria-label="Close">×</button>
+    </div>
+    <div class="m-body">
+      <p class="demo-note">Demo only: nothing here charges money, and prices are examples. In the real app, purchases go through the App Store or Google Play.</p>
+      <p class="shop-note" id="shopNote" hidden></p>
+      <div class="pane" id="shopPane">
+        <div class="wallet"><svg viewBox="0 0 24 24"><use href="#i-coin"/></svg><span><b id="mCoins">30</b> coins</span></div>
+        <div class="econ">
+          <div><h4>Earn coins</h4><ul><li>3 coins for each new star on a level</li><li>4 bonus coins for a first perfect solve</li></ul></div>
+          <div><h4>Spend coins</h4><ul><li>Hint (next best move): 5</li><li>Best route replay: 15, after 3 tries</li></ul></div>
+        </div>
+        <div class="items" id="items">
+          <div class="item"><svg class="ico" viewBox="0 0 24 24"><use href="#i-coin"/></svg><div><div class="t">100 coins</div><div class="d">About 20 hints</div></div><button class="button" data-buy="c100">$0.99</button></div>
+          <div class="item"><svg class="ico" viewBox="0 0 24 24"><use href="#i-coin"/></svg><div><div class="t">500 coins <span class="tag">Best value</span></div><div class="d">About 100 hints or 33 route replays</div></div><button class="button" data-buy="c500">$3.99</button></div>
+          <div class="item prem"><img class="ico" id="premIcon" alt=""><div><div class="t">Star Route Plus</div><div class="d">The Master and Grandmaster levels for every piece, free best-route replays after one try, and your progress report.</div><button class="linkish" id="premCancel" hidden>Turn off Plus (demo)</button></div><button class="button green" data-buy="prem" id="premBtn">$4.99/mo</button></div>
+        </div>
+        <p class="toast" id="toast" hidden></p>
+      </div>
+      <div class="pane" id="reportPane" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script id="levels">
+// The 60 puzzles. Squares use chess names. Edit by hand if you like;
+// the solver re-checks par and the best route every time the page loads.
+// guards / caps entries are [piece, square]: P N B R Q.
+const LEVEL_DATA = {
+  // Rook
+  R: [
+    /*  1 */ {"start":"f6", "stars":["c5", "c6"]},
+    /*  2 */ {"start":"a1", "stars":["b2", "a6", "d6"]},
+    /*  3 */ {"start":"f4", "stars":["g3", "b6", "f6"]},
+    /*  4 */ {"start":"c7", "stars":["h8", "c3", "c8", "c1", "a8"], "blocks":["a5", "d5", "b4"]},
+    /*  5 */ {"start":"f8", "stars":["c6", "f1", "c3", "a6"], "blocks":["f2"], "guards":[["P", "c2"]]},
+    /*  6 */ {"start":"g6", "stars":["a1", "f1", "e1", "h7", "h6", "b6"], "blocks":["g4", "g7", "d2", "b7"], "guards":[["N", "a2"], ["P", "f4"]]},
+    /*  7 */ {"start":"b3", "stars":["e8", "d4", "h1", "d1", "c1"], "blocks":["e4", "a7"], "guards":[["P", "d7"], ["B", "f1"]]},
+    /*  8 */ {"start":"h6", "stars":["g5", "a5", "c1", "g6", "e5", "h8", "e1"], "blocks":["d3", "a7", "c5", "h5", "c4"], "guards":[["N", "d5"], ["N", "d6"], ["P", "f3"]]},
+    /*  9 */ {"start":"h6", "stars":["c8", "f4", "e1", "g6", "c7", "a6"], "blocks":["c6", "a3", "e4"], "guards":[["N", "d4"], ["R", "b2"]]},
+    /* 10 */ {"start":"d3", "stars":["f5", "e6", "h8", "h3", "b3", "f8", "g8", "e2", "g5"], "blocks":["g2", "h6", "d2", "b6", "d4", "g6"], "guards":[["B", "b7"], ["R", "c1"], ["R", "d7"], ["B", "c7"]]},
+  ],
+  // Bishop
+  B: [
+    /*  1 */ {"start":"a3", "stars":["b8", "d6"]},
+    /*  2 */ {"start":"b2", "stars":["c7", "c1", "f4"]},
+    /*  3 */ {"start":"d8", "stars":["d6", "a3", "f4"]},
+    /*  4 */ {"start":"c6", "stars":["b3", "f5", "e8", "d7", "e4"], "blocks":["g4", "f6", "a4"]},
+    /*  5 */ {"start":"c4", "stars":["c8", "e8", "g6", "h7"], "blocks":["b3"], "guards":[["N", "c5"]]},
+    /*  6 */ {"start":"b8", "stars":["c7", "f4", "h6", "g3", "a1", "g7"], "blocks":["b6", "b7", "g5", "e7"], "guards":[["N", "c8"], ["P", "b4"]]},
+    /*  7 */ {"start":"e1", "stars":["h4", "b4", "b8", "g1", "a3"], "blocks":["d3", "a7"], "guards":[["B", "g7"], ["N", "f1"]]},
+    /*  8 */ {"start":"d3", "stars":["f1", "f5", "a8", "h3", "b7", "b1", "e4"], "blocks":["c2", "f4", "a6", "d7", "c7"], "guards":[["B", "f8"], ["N", "g6"], ["B", "e8"]]},
+    /*  9 */ {"start":"h6", "stars":["a5", "f8", "h8", "f2", "c7", "c1"], "blocks":["b4", "d5", "h4"], "guards":[["N", "c8"], ["R", "g4"]]},
+    /* 10 */ {"start":"e4", "stars":["b1", "f5", "a6", "b5", "f1", "c2", "c8", "a8", "g4"], "blocks":["g3", "c5", "d6", "b4", "d2", "e3"], "guards":[["N", "f4"], ["R", "h7"], ["B", "g8"], ["R", "d7"]]},
+  ],
+  // Queen
+  Q: [
+    /*  1 */ {"start":"d4", "stars":["e6", "g4"]},
+    /*  2 */ {"start":"c8", "stars":["e2", "b2", "b7"]},
+    /*  3 */ {"start":"c6", "stars":["a4", "c2", "f5"]},
+    /*  4 */ {"start":"c6", "stars":["b3", "b4", "b6", "f4", "d6"], "blocks":["b5", "a6", "d2"]},
+    /*  5 */ {"start":"f5", "stars":["c5", "g1", "a5", "f7"], "blocks":["f3"], "guards":[["N", "g4"]]},
+    /*  6 */ {"start":"c4", "stars":["h8", "b8", "b7", "a6", "g5", "h4"], "blocks":["e5", "f7", "b2", "a7"], "guards":[["N", "g1"], ["N", "c2"]]},
+    /*  7 */ {"start":"f3", "stars":["h7", "h1", "e4", "g5", "f6"], "blocks":["c2", "f4"], "guards":[["B", "a2"], ["N", "g6"]]},
+    /*  8 */ {"start":"d8", "stars":["h7", "h6", "g8", "a2", "a6", "d6", "h1"], "blocks":["c5", "f4", "f3", "c6", "f7"], "guards":[["N", "b6"], ["N", "h8"], ["B", "d4"]]},
+    /*  9 */ {"start":"e3", "stars":["g8", "e4", "b7", "h7", "f6", "e1"], "blocks":["e6", "d3", "h2"], "guards":[["N", "c6"], ["P", "f7"]]},
+    /* 10 */ {"start":"e5", "stars":["b1", "c6", "g1", "c7", "g5", "e3", "f5", "a4", "d8"], "blocks":["a2", "c3", "a6", "c2", "d5", "d6"], "guards":[["P", "c4"], ["B", "b2"], ["B", "f3"], ["P", "h7"]]},
+  ],
+  // King
+  K: [
+    /*  1 */ {"start":"e1", "stars":["f1", "d3"]},
+    /*  2 */ {"start":"e7", "stars":["e8", "c6", "f8"]},
+    /*  3 */ {"start":"g3", "stars":["d5", "h1", "f3"]},
+    /*  4 */ {"start":"g2", "stars":["g3", "h1", "f2", "d4", "d5"], "blocks":["b5", "e5", "b3"]},
+    /*  5 */ {"start":"b4", "stars":["f2", "g4", "a4", "c4"], "blocks":["h2"], "guards":[["N", "f5"]]},
+    /*  6 */ {"start":"f4", "stars":["e2", "e5", "d4", "c4", "a7", "f5"], "blocks":["h2", "a2", "h4", "e4"], "guards":[["N", "h1"], ["P", "g2"]]},
+    /*  7 */ {"start":"f5", "stars":["c1", "c5", "d7", "d3", "h3"], "blocks":["h6", "h5"], "guards":[["P", "h4"], ["P", "b5"]]},
+    /*  8 */ {"start":"e5", "stars":["c2", "h2", "e3", "e1", "e6", "c7", "f2"], "blocks":["c4", "h4", "b3", "g3", "h3"], "guards":[["P", "c5"], ["B", "f8"], ["N", "b1"]]},
+    /*  9 */ {"start":"f5", "stars":["e5", "g8", "g1", "c2", "e2", "f4"], "blocks":["e6", "b6", "g7"], "guards":[["B", "e1"], ["B", "h1"]]},
+    /* 10 */ {"start":"g3", "stars":["c3", "g5", "f1", "f3", "g2", "d3", "c1", "h1", "b1"], "blocks":["d4", "b6", "f4", "e3", "e4", "b4"], "guards":[["R", "d6"], ["B", "c8"], ["N", "c4"], ["P", "b3"]]},
+  ],
+  // Knight
+  N: [
+    /*  1 */ {"start":"e2", "stars":["g3", "f5"]},
+    /*  2 */ {"start":"c7", "stars":["b5", "a7", "b4"]},
+    /*  3 */ {"start":"a6", "stars":["a1", "a4", "b3"]},
+    /*  4 */ {"start":"d1", "stars":["g3", "e1", "f2", "b2", "e4"], "blocks":["a3", "f4", "b7"]},
+    /*  5 */ {"start":"f6", "stars":["e4", "f2", "h2", "b7"], "blocks":["d6"], "guards":[["N", "a8"]]},
+    /*  6 */ {"start":"e1", "stars":["h7", "e7", "e2", "g6", "f4", "c1"], "blocks":["h6", "h2", "g5", "f3"], "guards":[["N", "e3"], ["P", "a2"]]},
+    /*  7 */ {"start":"h6", "stars":["e2", "g5", "g6", "c2", "e1"], "blocks":["h5", "d3"], "guards":[["P", "a2"], ["N", "d6"]]},
+    /*  8 */ {"start":"d1", "stars":["g4", "e5", "h7", "f4", "c6", "b2", "g5"], "blocks":["d5", "f2", "a6", "h6", "g3"], "guards":[["N", "c8"], ["N", "c5"], ["B", "h2"]]},
+    /*  9 */ {"start":"b7", "stars":["c1", "a4", "c3", "b5", "e3", "c5"], "blocks":["c4", "a5", "h5"], "guards":[["R", "g2"], ["R", "d6"]]},
+    /* 10 */ {"start":"f8", "stars":["d4", "g7", "h5", "c7", "a8", "a3", "g8", "g5", "e4"], "blocks":["e6", "c3", "d7", "d6", "c6", "g2"], "guards":[["P", "c4"], ["P", "g3"], ["N", "e5"], ["N", "e1"]]},
+  ],
+  // Pawn
+  P: [
+    /*  1 */ {"start":"b2", "stars":["a4"]},
+    /*  2 */ {"start":"e2", "stars":["d5", "e6"]},
+    /*  3 */ {"start":"e2", "stars":["d4", "c5"]},
+    /*  4 */ {"start":"g2", "stars":["h3", "g5", "h6"], "blocks":["b7", "g4", "e4"]},
+    /*  5 */ {"start":"e2", "stars":["f6", "e7"], "blocks":["f3"], "guards":[["N", "e6"]]},
+    /*  6 */ {"start":"b2", "stars":["a3", "b4", "c5", "b6"], "blocks":["b3", "h5", "e5", "h7"], "guards":[["N", "d6"], ["N", "f5"]]},
+    /*  7 */ {"start":"c2", "stars":["b4", "a6", "b7"], "blocks":["c5", "e7"], "guards":[["P", "d7"], ["P", "h4"]]},
+    /*  8 */ {"start":"c2", "stars":["b3", "a4", "b6", "a7"], "blocks":["f5", "g5", "a2", "g4", "b7"], "guards":[["P", "g6"], ["P", "e5"], ["N", "f6"]]},
+    /*  9 */ {"start":"h2", "stars":["g3", "h6", "g7"], "blocks":["b4", "e3", "d5"], "guards":[["N", "a7"], ["P", "f3"]]},
+    /* 10 */ {"start":"f2", "stars":["e3", "d4", "e5", "f6", "g7"], "blocks":["d5", "d3", "g4", "b7", "f4", "b5"], "guards":[["P", "b3"], ["P", "h6"], ["N", "b6"], ["P", "a7"]]},
+  ],
+};
+</script>
+
+<script id="engine">
+const Engine = (() => {
+  const FILES = 'abcdefgh';
+  const F = s => s & 7, Rk = s => s >> 3;
+  const sqName = s => FILES[F(s)] + (Rk(s) + 1);
+  const LEVELS = 10;
+  const ORTHO = [[1,0],[-1,0],[0,1],[0,-1]], DIAG = [[1,1],[1,-1],[-1,1],[-1,-1]];
+  const KN = [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]];
+  const MOVES = { R:{d:ORTHO,slide:1}, B:{d:DIAG,slide:1}, Q:{d:ORTHO.concat(DIAG),slide:1}, K:{d:ORTHO.concat(DIAG),slide:0}, N:{d:KN,slide:0} };
+
+  const TIERS = [
+    {key:'beginner',  name:'Beginner',    from:1,   to:2,   stars:[2,3], pawn:[1,2], blocks:[0,0], guards:[0,0], gpool:[],            trap:0,    reach:2, keep:1, desc:'A few stars on an open board. Learn how the piece moves.'},
+    {key:'explorer',  name:'Explorer',    from:3,   to:4,   stars:[3,5], pawn:[2,3], blocks:[0,3], guards:[0,0], gpool:[],            trap:0.15, reach:3, keep:2, desc:'More stars, and your own pawns block the way.'},
+    {key:'strategist',name:'Strategist',  from:5,   to:6,   stars:[4,6], pawn:[2,4], blocks:[1,4], guards:[1,2], gpool:['P','N'],     trap:0.35, reach:9, keep:3, desc:'Guards appear. Never land on a red square.'},
+    {key:'master',    name:'Master',      from:7,   to:8,   stars:[5,7], pawn:[3,4], blocks:[2,5], guards:[2,3], gpool:['P','N','B'], trap:0.7,  reach:9, keep:3, desc:'Longer routes. Grabbing the nearest star first often costs moves.'},
+    {key:'gm',        name:'Grandmaster', from:9,   to:10,  stars:[6,9], pawn:[3,5], blocks:[3,6], guards:[2,4], gpool:['P','N','B','R'], trap:1, reach:9, keep:3, desc:'Built to punish nearest-star-first. Plan the whole route before you move.'},
+  ];
+  const tierOf = n => TIERS.find(t => n >= t.from && n <= t.to) || TIERS[TIERS.length - 1];
+
+  function rngFor(str){
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++){ h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    let a = h >>> 0;
+    return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const ri = (rng, n) => Math.floor(rng() * n);
+  const pick = (rng, a) => a[ri(rng, a.length)];
+  const span = (r, frac, rng) => { const [lo, hi] = r; return Math.max(lo, Math.min(hi, Math.round(lo + (hi - lo) * frac + (rng() - 0.5) * 0.9))); };
+  function sample(arr, k, rng){ const a = arr.slice(); for (let i = 0; i < k; i++){ const j = i + ri(rng, a.length - i); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, k); }
+
+  function rays(s, spec, occ){
+    const out = [], f = F(s), r = Rk(s);
+    for (const [df, dr] of spec.d){
+      let nf = f + df, nr = r + dr;
+      while (nf >= 0 && nf < 8 && nr >= 0 && nr < 8){
+        const t = nr * 8 + nf; if (occ[t]) break; out.push(t);
+        if (!spec.slide) break; nf += df; nr += dr;
+      }
+    }
+    return out;
+  }
+  function guardSquares(g, occ){
+    if (g.type === 'P'){ const f = F(g.sq), r = Rk(g.sq), o = []; if (r > 0){ if (f > 0) o.push(g.sq - 9); if (f < 7) o.push(g.sq - 7); } return o; }
+    return rays(g.sq, MOVES[g.type], occ);
+  }
+  function attacks(guards, occ){
+    const att = new Uint8Array(64), by = new Int8Array(64).fill(-1);
+    guards.forEach((g, i) => { for (const t of guardSquares(g, occ)){ if (occ[t]) continue; att[t] = 1; if (by[t] < 0) by[t] = i; } });
+    return { att, by };
+  }
+  function buildAdj(piece, occ, att){
+    const adj = [];
+    for (let s = 0; s < 64; s++) adj.push(occ[s] ? [] : rays(s, MOVES[piece], occ).filter(t => !att[t]));
+    return adj;
+  }
+  function pawnLegal(L, s, mask){
+    const out = [], f = F(s), r = Rk(s);
+    if (r >= 6) return out;
+    const free = t => !L.occ[t] && !(L.isCap[t] && !(mask & L.tbit[t]));
+    const one = s + 8;
+    if (free(one)){
+      if (!L.att[one]) out.push(one);
+      // A double step can't hop over an uncollected star.
+      const starOnOne = L.tbit[one] && !(mask & L.tbit[one]);
+      if (r === 1 && !starOnOne){ const two = s + 16; if (free(two) && !L.att[two]) out.push(two); }
+    }
+    for (const df of [-1, 1]){
+      const nf = f + df; if (nf < 0 || nf > 7) continue;
+      const t = s + 8 + df;
+      if (L.isCap[t] && !(mask & L.tbit[t]) && !L.att[t]) out.push(t);
+    }
+    return out;
+  }
+  // Rooks, bishops and queens must stop on an uncollected star: they can't slide past it.
+  function slideLegal(L, s, mask){
+    const out = [], spec = MOVES[L.piece], f = F(s), r = Rk(s);
+    for (const [df, dr] of spec.d){
+      let nf = f + df, nr = r + dr;
+      while (nf >= 0 && nf < 8 && nr >= 0 && nr < 8){
+        const t = nr * 8 + nf; if (L.occ[t]) break;
+        if (!L.att[t]) out.push(t);
+        if (L.tbit[t] && !(mask & L.tbit[t])) break;
+        nf += df; nr += dr;
+      }
+    }
+    return out;
+  }
+  function slideBlocker(L, from, to, mask){
+    const df = Math.sign(F(to) - F(from)), dr = Math.sign(Rk(to) - Rk(from));
+    const adx = Math.abs(F(to) - F(from)), ady = Math.abs(Rk(to) - Rk(from));
+    if (!(adx === 0 || ady === 0 || adx === ady)) return null;
+    for (let x = from + dr * 8 + df; x !== to; x += dr * 8 + df){
+      if (L.occ[x]) return { sq: x, kind: 'piece' };
+      if (L.tbit[x] && !(mask & L.tbit[x])) return { sq: x, kind: 'star' };
+    }
+    return null;
+  }
+  const legal = (L, s, mask) => L.piece === 'P' ? pawnLegal(L, s, mask) : MOVES[L.piece].slide ? slideLegal(L, s, mask) : L.adj[s];
+
+  // Breadth-first search over (square, collected-set): the first full state reached is the shortest route.
+  function solve(L, from, mask0){
+    const full = L.full, size = 64 << L.targets.length;
+    const seen = new Uint8Array(size), par = new Int32Array(size), q = new Int32Array(size);
+    let h = 0, t = 0; const st0 = (mask0 << 6) | from; seen[st0] = 1; par[st0] = -1; q[t++] = st0;
+    while (h < t){
+      const st = q[h++], s = st & 63, m = st >> 6;
+      if (m === full){ const path = []; let x = st; while (par[x] !== -1){ path.push(x & 63); x = par[x]; } return path.reverse(); }
+      for (const d of legal(L, s, m)){
+        const nm = m | L.tbit[d], ns = (nm << 6) | d;
+        if (!seen[ns]){ seen[ns] = 1; par[ns] = st; q[t++] = ns; }
+      }
+    }
+    return null;
+  }
+  function bfs1(adj, from){
+    const dist = new Int8Array(64).fill(-1), par = new Int8Array(64).fill(-1), q = [from]; dist[from] = 0;
+    for (let i = 0; i < q.length; i++){ const s = q[i]; for (const d of adj[s]) if (dist[d] < 0){ dist[d] = dist[s] + 1; par[d] = s; q.push(d); } }
+    return { dist, par };
+  }
+  // What a player gets by always heading for the closest remaining star.
+  // What a player gets by always heading for the closest remaining star.
+  function greedy(L){
+    let pos = L.start, m = 0, total = 0;
+    while (m !== L.full){
+      const seen = new Uint8Array(64), q = [pos], d = [0]; seen[pos] = 1;
+      let found = -1, fd = 0;
+      for (let i = 0; i < q.length && found < 0; i++){
+        for (const t of legal(L, q[i], m)){
+          if (L.tbit[t] & ~m){ found = t; fd = d[i] + 1; break; }
+          if (!seen[t]){ seen[t] = 1; q.push(t); d.push(d[i] + 1); }
+        }
+      }
+      if (found < 0) return Infinity;
+      m |= L.tbit[found]; total += fd; pos = found;
+    }
+    return total;
+  }
+  function finalize(L){
+    L.targets = L.stars.concat(L.caps);
+    L.tbit = new Int32Array(64); L.isCap = new Uint8Array(64);
+    L.targets.forEach((t, i) => { L.tbit[t] = 1 << i; });
+    L.caps.forEach(t => { L.isCap[t] = 1; });
+    // The pawn's stars are things it captures: only diagonally, one square forward; they block straight moves.
+    if (L.piece === 'P') L.stars.forEach(t => { L.isCap[t] = 1; });
+    L.full = (1 << L.targets.length) - 1;
+    L.path = solve(L, L.start, 0);
+    L.opt = L.path ? L.path.length : Infinity;
+    L.greedy = L.piece === 'P' ? L.opt : greedy(L);
+    L.tricky = L.greedy > L.opt;
+    return L;
+  }
+  function freeSq(rng, used, ok){ for (let i = 0; i < 400; i++){ const s = ri(rng, 64); if (!used.has(s) && (!ok || ok(s))) return s; } return -1; }
+
+  function genStandard(piece, n, T, rng, frac){
+    let best = null, bestScore = -1;
+    const wantTrap = rng() < T.trap;
+    for (let a = 0; a < 70; a++){
+      const occ = new Uint8Array(64), used = new Set(), blocks = [], guards = [];
+      const start = ri(rng, 64); used.add(start);
+      const nb = span(T.blocks, frac, rng), ng = span(T.guards, frac, rng);
+      // Pawns never stand on the first or last rank.
+      const pawnRank = x => Rk(x) >= 1 && Rk(x) <= 6;
+      for (let i = 0; i < nb; i++){ const s = freeSq(rng, used, pawnRank); if (s < 0) break; blocks.push(s); used.add(s); occ[s] = 1; }
+      for (let i = 0; i < ng; i++){
+        const type = pick(rng, T.gpool);
+        const s = freeSq(rng, used, x => type !== 'P' || pawnRank(x));
+        if (s < 0) break;
+        guards.push({ sq: s, type }); used.add(s); occ[s] = 1;
+      }
+      const { att, by } = attacks(guards, occ);
+      if (att[start]) continue;
+      const adj = buildAdj(piece, occ, att);
+      const { dist } = bfs1(adj, start);
+      const cand = []; for (let s = 0; s < 64; s++) if (dist[s] > 0 && dist[s] <= T.reach) cand.push(s);
+      const k = span(T.stars, frac, rng);
+      if (cand.length < k) continue;
+      const stars = sample(cand, k, rng);
+      const L = finalize({ piece, n, tier: T, start, stars, caps: [], capTypes: [], blocks, guards, occ, att, by, adj });
+      if (!L.path) continue;
+      const score = (L.tricky ? 1000 : 0) + L.opt;
+      if (score > bestScore){ best = L; bestScore = score; }
+      if (wantTrap ? L.tricky : a >= T.keep - 1) break;
+    }
+    return best;
+  }
+
+  function genPawn(n, T, rng, frac){
+    let k = span(T.pawn, frac, rng);
+    for (; k >= 1; k--){
+      for (let a = 0; a < 300; a++){
+        const start = 8 + ri(rng, 8); const steps = []; let s = start;
+        while (Rk(s) < 6){
+          const r = Rk(s), f = F(s), opts = ['f1', 'f1'];
+          if (r === 1) opts.push('f2', 'f2');
+          if (f > 0) opts.push('dl'); if (f < 7) opts.push('dr');
+          const o = pick(rng, opts);
+          if (o === 'f1') steps.push({ sq: s + 8, kind: 'move' });
+          else if (o === 'f2') steps.push({ sq: s + 16, via: s + 8, kind: 'move' });
+          else steps.push({ sq: s + (o === 'dl' ? 7 : 9), kind: 'cap' });
+          s = steps[steps.length - 1].sq;
+        }
+        const caps = steps.filter(x => x.kind === 'cap').map(x => x.sq);
+        // every diagonal step of the path is a star capture, and there are exactly k of them
+        if (caps.length !== k) continue;
+        const stars = caps.slice();
+        const tset = new Set(stars);
+        let last = 0; steps.forEach((x, i) => { if (tset.has(x.sq)) last = i; });
+        const keep = steps.slice(0, last + 1);
+        const protectedSq = new Set([start]); keep.forEach(x => { protectedSq.add(x.sq); if (x.via) protectedSq.add(x.via); });
+        const occ = new Uint8Array(64), used = new Set(protectedSq), blocks = [], guards = [];
+        const nb = span(T.blocks, frac, rng), ng = span(T.guards, frac, rng);
+        for (let i = 0; i < nb; i++){ const b = freeSq(rng, used, x => Rk(x) >= 1 && Rk(x) <= 6); if (b < 0) break; blocks.push(b); used.add(b); occ[b] = 1; }
+        for (let i = 0; i < ng; i++){
+          const type = rng() < 0.6 ? 'P' : 'N';
+          const g = freeSq(rng, used, x => Rk(x) >= 2 && (type !== 'P' || Rk(x) <= 6) && !guardSquares({ sq: x, type }, new Uint8Array(64)).some(t => protectedSq.has(t)));
+          if (g < 0) break; guards.push({ sq: g, type }); used.add(g); occ[g] = 1;
+        }
+        const { att, by } = attacks(guards, occ);
+        const L = finalize({ piece: 'P', n, tier: T, start, stars, caps: [], capTypes: [], blocks, guards, occ, att, by, adj: null });
+        if (L.path) return L;
+      }
+    }
+    return null;
+  }
+
+  function generate(piece, n, seed){
+    const T = tierOf(n), rng = rngFor('star-route:' + piece + n + (seed ? ':' + seed : '')), frac = T.to === T.from ? 0 : (n - T.from) / (T.to - T.from);
+    return piece === 'P' ? genPawn(n, T, rng, frac) : genStandard(piece, n, T, rng, frac);
+  }
+  const idx = name => FILES.indexOf(name[0]) + (+name.slice(1) - 1) * 8;
+  function fromData(piece, n, d){
+    const T = tierOf(n), occ = new Uint8Array(64);
+    const blocks = (d.blocks || []).map(idx), guards = (d.guards || []).map(([type, sq]) => ({ type, sq: idx(sq) }));
+    blocks.forEach(s => { occ[s] = 1; }); guards.forEach(g => { occ[g.sq] = 1; });
+    const { att, by } = attacks(guards, occ);
+    const caps = (d.caps || []).map(c => idx(c[1])), capTypes = (d.caps || []).map(c => c[0]);
+    return finalize({ piece, n, tier: T, start: idx(d.start), stars: (d.stars || []).map(idx), caps, capTypes, blocks, guards, occ, att, by,
+      adj: piece === 'P' ? null : buildAdj(piece, occ, att) });
+  }
+  function toData(L){
+    const d = { start: sqName(L.start) };
+    if (L.stars.length) d.stars = L.stars.map(sqName);
+    if (L.caps.length) d.caps = L.caps.map((s, i) => [L.capTypes[i], sqName(s)]);
+    if (L.blocks.length) d.blocks = L.blocks.map(sqName);
+    if (L.guards.length) d.guards = L.guards.map(g => [g.type, sqName(g.sq)]);
+    return d;
+  }
+  // Number of different shortest routes (1 = the solution is unique).
+  function countRoutes(L){
+    if (!L.path) return 0;
+    const size = 64 << L.targets.length, dist = new Int16Array(size).fill(-1), cnt = new Float64Array(size), q = new Int32Array(size);
+    let h = 0, t = 0; dist[L.start] = 0; cnt[L.start] = 1; q[t++] = L.start;
+    while (h < t){
+      const st = q[h++], d = dist[st]; if (d >= L.opt) break;
+      const s = st & 63, m = st >> 6;
+      for (const to of legal(L, s, m)){
+        const ns = ((m | L.tbit[to]) << 6) | to;
+        if (dist[ns] < 0){ dist[ns] = d + 1; cnt[ns] = cnt[st]; q[t++] = ns; }
+        else if (dist[ns] === d + 1) cnt[ns] += cnt[st];
+      }
+    }
+    let total = 0; for (let s = 0; s < 64; s++){ const st = (L.full << 6) | s; if (dist[st] === L.opt) total += cnt[st]; }
+    return total;
+  }
+  const DATA = typeof LEVEL_DATA !== 'undefined' ? LEVEL_DATA : null;
+  const cache = new Map();
+  function level(piece, n){
+    const key = piece + n;
+    if (cache.has(key)) return cache.get(key);
+    const d = DATA && DATA[piece] && DATA[piece][n - 1];
+    const L = d ? fromData(piece, n, d) : generate(piece, n);
+    if (L) L.routes = countRoutes(L);
+    cache.set(key, L);
+    return L;
+  }
+  return { slideBlocker, generate, fromData, toData, countRoutes, level, legal, solve, attacks, TIERS, tierOf, LEVELS, sqName, F, Rk, FILES };
+})();
+</script>
+
+<script>
+(() => {
+  // WEB = free community edition: everything unlocked, no coins/shop, no designer tools.
+  const WEB = true;
+  if (WEB) document.documentElement.classList.add('web');
+  const E = Engine, { F, Rk, sqName, FILES } = E;
+  const IMG = {"bB": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0ib3BhY2l0eToxOyBmaWxsOm5vbmU7IGZpbGwtcnVsZTpldmVub2RkOyBmaWxsLW9wYWNpdHk6MTsgc3Ryb2tlOiMwMDAwMDA7IHN0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kOyBzdHJva2UtbGluZWpvaW46cm91bmQ7IHN0cm9rZS1taXRlcmxpbWl0OjQ7IHN0cm9rZS1kYXNoYXJyYXk6bm9uZTsgc3Ryb2tlLW9wYWNpdHk6MTsiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsMC42KSI+CiAgICA8ZyBzdHlsZT0iZmlsbDojMDAwMDAwOyBzdHJva2U6IzAwMDAwMDsgc3Ryb2tlLWxpbmVjYXA6YnV0dDsiPgogICAgICA8cGF0aCBkPSJNIDksMzYgQyAxMi4zOSwzNS4wMyAxOS4xMSwzNi40MyAyMi41LDM0IEMgMjUuODksMzYuNDMgMzIuNjEsMzUuMDMgMzYsMzYgQyAzNiwzNiAzNy42NSwzNi41NCAzOSwzOCBDIDM4LjMyLDM4Ljk3IDM3LjM1LDM4Ljk5IDM2LDM4LjUgQyAzMi42MSwzNy41MyAyNS44OSwzOC45NiAyMi41LDM3LjUgQyAxOS4xMSwzOC45NiAxMi4zOSwzNy41MyA5LDM4LjUgQyA3LjY1LDM4Ljk5IDYuNjgsMzguOTcgNiwzOCBDIDcuMzUsMzYuNTQgOSwzNiA5LDM2IHoiLz4KICAgICAgPHBhdGggZD0iTSAxNSwzMiBDIDE3LjUsMzQuNSAyNy41LDM0LjUgMzAsMzIgQyAzMC41LDMwLjUgMzAsMzAgMzAsMzAgQyAzMCwyNy41IDI3LjUsMjYgMjcuNSwyNiBDIDMzLDI0LjUgMzMuNSwxNC41IDIyLjUsMTAuNSBDIDExLjUsMTQuNSAxMiwyNC41IDE3LjUsMjYgQyAxNy41LDI2IDE1LDI3LjUgMTUsMzAgQyAxNSwzMCAxNC41LDMwLjUgMTUsMzIgeiIvPgogICAgICA8cGF0aCBkPSJNIDI1IDggQSAyLjUgMi41IDAgMSAxICAyMCw4IEEgMi41IDIuNSAwIDEgMSAgMjUgOCB6Ii8+CiAgICA8L2c+CiAgICA8cGF0aCBkPSJNIDE3LjUsMjYgTCAyNy41LDI2IE0gMTUsMzAgTCAzMCwzMCBNIDIyLjUsMTUuNSBMIDIyLjUsMjAuNSBNIDIwLDE4IEwgMjUsMTgiIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojZmZmZmZmOyBzdHJva2UtbGluZWpvaW46bWl0ZXI7Ii8+CiAgPC9nPgo8L3N2Zz4K", "wB": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0ib3BhY2l0eToxOyBmaWxsOm5vbmU7IGZpbGwtcnVsZTpldmVub2RkOyBmaWxsLW9wYWNpdHk6MTsgc3Ryb2tlOiMwMDAwMDA7IHN0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kOyBzdHJva2UtbGluZWpvaW46cm91bmQ7IHN0cm9rZS1taXRlcmxpbWl0OjQ7IHN0cm9rZS1kYXNoYXJyYXk6bm9uZTsgc3Ryb2tlLW9wYWNpdHk6MTsiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsMC42KSI+CiAgICA8ZyBzdHlsZT0iZmlsbDojZmZmZmZmOyBzdHJva2U6IzAwMDAwMDsgc3Ryb2tlLWxpbmVjYXA6YnV0dDsiPgogICAgICA8cGF0aCBkPSJNIDksMzYgQyAxMi4zOSwzNS4wMyAxOS4xMSwzNi40MyAyMi41LDM0IEMgMjUuODksMzYuNDMgMzIuNjEsMzUuMDMgMzYsMzYgQyAzNiwzNiAzNy42NSwzNi41NCAzOSwzOCBDIDM4LjMyLDM4Ljk3IDM3LjM1LDM4Ljk5IDM2LDM4LjUgQyAzMi42MSwzNy41MyAyNS44OSwzOC45NiAyMi41LDM3LjUgQyAxOS4xMSwzOC45NiAxMi4zOSwzNy41MyA5LDM4LjUgQyA3LjY1LDM4Ljk5IDYuNjgsMzguOTcgNiwzOCBDIDcuMzUsMzYuNTQgOSwzNiA5LDM2IHoiLz4KICAgICAgPHBhdGggZD0iTSAxNSwzMiBDIDE3LjUsMzQuNSAyNy41LDM0LjUgMzAsMzIgQyAzMC41LDMwLjUgMzAsMzAgMzAsMzAgQyAzMCwyNy41IDI3LjUsMjYgMjcuNSwyNiBDIDMzLDI0LjUgMzMuNSwxNC41IDIyLjUsMTAuNSBDIDExLjUsMTQuNSAxMiwyNC41IDE3LjUsMjYgQyAxNy41LDI2IDE1LDI3LjUgMTUsMzAgQyAxNSwzMCAxNC41LDMwLjUgMTUsMzIgeiIvPgogICAgICA8cGF0aCBkPSJNIDI1IDggQSAyLjUgMi41IDAgMSAxICAyMCw4IEEgMi41IDIuNSAwIDEgMSAgMjUgOCB6Ii8+CiAgICA8L2c+CiAgICA8cGF0aCBkPSJNIDE3LjUsMjYgTCAyNy41LDI2IE0gMTUsMzAgTCAzMCwzMCBNIDIyLjUsMTUuNSBMIDIyLjUsMjAuNSBNIDIwLDE4IEwgMjUsMTgiIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojMDAwMDAwOyBzdHJva2UtbGluZWpvaW46bWl0ZXI7Ii8+CiAgPC9nPgo8L3N2Zz4K", "bK": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0iZmlsbDpub25lOyBmaWxsLW9wYWNpdHk6MTsgZmlsbC1ydWxlOmV2ZW5vZGQ7IHN0cm9rZTojMDAwMDAwOyBzdHJva2Utd2lkdGg6MS41OyBzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6NDsgc3Ryb2tlLWRhc2hhcnJheTpub25lOyBzdHJva2Utb3BhY2l0eToxOyI+CiAgICA8cGF0aCBkPSJNIDIyLjUsMTEuNjMgTCAyMi41LDYiIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojMDAwMDAwOyBzdHJva2UtbGluZWpvaW46bWl0ZXI7IiBpZD0icGF0aDY1NzAiLz4KICAgIDxwYXRoIGQ9Ik0gMjIuNSwyNSBDIDIyLjUsMjUgMjcsMTcuNSAyNS41LDE0LjUgQyAyNS41LDE0LjUgMjQuNSwxMiAyMi41LDEyIEMgMjAuNSwxMiAxOS41LDE0LjUgMTkuNSwxNC41IEMgMTgsMTcuNSAyMi41LDI1IDIyLjUsMjUiIHN0eWxlPSJmaWxsOiMwMDAwMDA7ZmlsbC1vcGFjaXR5OjE7IHN0cm9rZS1saW5lY2FwOmJ1dHQ7IHN0cm9rZS1saW5lam9pbjptaXRlcjsiLz4KICAgIDxwYXRoIGQ9Ik0gMTIuNSwzNyBDIDE4LDQwLjUgMjcsNDAuNSAzMi41LDM3IEwgMzIuNSwzMCBDIDMyLjUsMzAgNDEuNSwyNS41IDM4LjUsMTkuNSBDIDM0LjUsMTMgMjUsMTYgMjIuNSwyMy41IEwgMjIuNSwyNyBMIDIyLjUsMjMuNSBDIDIwLDE2IDEwLjUsMTMgNi41LDE5LjUgQyAzLjUsMjUuNSAxMi41LDMwIDEyLjUsMzAgTCAxMi41LDM3IiBzdHlsZT0iZmlsbDojMDAwMDAwOyBzdHJva2U6IzAwMDAwMDsiLz4KICAgIDxwYXRoIGQ9Ik0gMjAsOCBMIDI1LDgiIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojMDAwMDAwOyBzdHJva2UtbGluZWpvaW46bWl0ZXI7Ii8+CiAgICA8cGF0aCBkPSJNIDMyLDI5LjUgQyAzMiwyOS41IDQwLjUsMjUuNSAzOC4wMywxOS44NSBDIDM0LjE1LDE0IDI1LDE4IDIyLjUsMjQuNSBMIDIyLjUsMjYuNiBMIDIyLjUsMjQuNSBDIDIwLDE4IDEwLjg1LDE0IDYuOTcsMTkuODUgQyA0LjUsMjUuNSAxMywyOS41IDEzLDI5LjUiIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojZmZmZmZmOyIvPgogICAgPHBhdGggZD0iTSAxMi41LDMwIEMgMTgsMjcgMjcsMjcgMzIuNSwzMCBNIDEyLjUsMzMuNSBDIDE4LDMwLjUgMjcsMzAuNSAzMi41LDMzLjUgTSAxMi41LDM3IEMgMTgsMzQgMjcsMzQgMzIuNSwzNyIgc3R5bGU9ImZpbGw6bm9uZTsgc3Ryb2tlOiNmZmZmZmY7Ii8+CiAgPC9nPgo8L3N2Zz4K", "wK": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0NSIgaGVpZ2h0PSI0NSI+CiAgPGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2U9IiMwMDAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiPgogICAgPHBhdGggc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTIyLjUgMTEuNjNWNk0yMCA4aDUiLz4KICAgIDxwYXRoIGZpbGw9IiNmZmYiIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMjIuNSAyNXM0LjUtNy41IDMtMTAuNWMwIDAtMS0yLjUtMy0yLjVzLTMgMi41LTMgMi41Yy0xLjUgMyAzIDEwLjUgMyAxMC41Ii8+CiAgICA8cGF0aCBmaWxsPSIjZmZmIiBkPSJNMTIuNSAzN2M1LjUgMy41IDE0LjUgMy41IDIwIDB2LTdzOS00LjUgNi0xMC41Yy00LTYuNS0xMy41LTMuNS0xNiA0VjI3di0zLjVjLTIuNS03LjUtMTItMTAuNS0xNi00LTMgNiA2IDEwLjUgNiAxMC41djciLz4KICAgIDxwYXRoIGQ9Ik0xMi41IDMwYzUuNS0zIDE0LjUtMyAyMCAwbS0yMCAzLjVjNS41LTMgMTQuNS0zIDIwIDBtLTIwIDMuNWM1LjUtMyAxNC41LTMgMjAgMCIvPgogIDwvZz4KPC9zdmc+", "bN": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0ib3BhY2l0eToxOyBmaWxsOm5vbmU7IGZpbGwtb3BhY2l0eToxOyBmaWxsLXJ1bGU6ZXZlbm9kZDsgc3Ryb2tlOiMwMDAwMDA7IHN0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDo0OyBzdHJva2UtZGFzaGFycmF5Om5vbmU7IHN0cm9rZS1vcGFjaXR5OjE7IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDAuMykiPgogICAgPHBhdGgKICAgICAgZD0iTSAyMiwxMCBDIDMyLjUsMTEgMzguNSwxOCAzOCwzOSBMIDE1LDM5IEMgMTUsMzAgMjUsMzIuNSAyMywxOCIKICAgICAgc3R5bGU9ImZpbGw6IzAwMDAwMDsgc3Ryb2tlOiMwMDAwMDA7IiAvPgogICAgPHBhdGgKICAgICAgZD0iTSAyNCwxOCBDIDI0LjM4LDIwLjkxIDE4LjQ1LDI1LjM3IDE2LDI3IEMgMTMsMjkgMTMuMTgsMzEuMzQgMTEsMzEgQyA5Ljk1OCwzMC4wNiAxMi40MSwyNy45NiAxMSwyOCBDIDEwLDI4IDExLjE5LDI5LjIzIDEwLDMwIEMgOSwzMCA1Ljk5NywzMSA2LDI2IEMgNiwyNCAxMiwxNCAxMiwxNCBDIDEyLDE0IDEzLjg5LDEyLjEgMTQsMTAuNSBDIDEzLjI3LDkuNTA2IDEzLjUsOC41IDEzLjUsNy41IEMgMTQuNSw2LjUgMTYuNSwxMCAxNi41LDEwIEwgMTguNSwxMCBDIDE4LjUsMTAgMTkuMjgsOC4wMDggMjEsNyBDIDIyLDcgMjIsMTAgMjIsMTAiCiAgICAgIHN0eWxlPSJmaWxsOiMwMDAwMDA7IHN0cm9rZTojMDAwMDAwOyIgLz4KICAgIDxwYXRoCiAgICAgIGQ9Ik0gOS41IDI1LjUgQSAwLjUgMC41IDAgMSAxIDguNSwyNS41IEEgMC41IDAuNSAwIDEgMSA5LjUgMjUuNSB6IgogICAgICBzdHlsZT0iZmlsbDojZmZmZmZmOyBzdHJva2U6I2ZmZmZmZjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDE1IDE1LjUgQSAwLjUgMS41IDAgMSAxICAxNCwxNS41IEEgMC41IDEuNSAwIDEgMSAgMTUgMTUuNSB6IgogICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjg2NiwwLjUsLTAuNSwwLjg2Niw5LjY5MywtNS4xNzMpIgogICAgICBzdHlsZT0iZmlsbDojZmZmZmZmOyBzdHJva2U6I2ZmZmZmZjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDI0LjU1LDEwLjQgTCAyNC4xLDExLjg1IEwgMjQuNiwxMiBDIDI3Ljc1LDEzIDMwLjI1LDE0LjQ5IDMyLjUsMTguNzUgQyAzNC43NSwyMy4wMSAzNS43NSwyOS4wNiAzNS4yNSwzOSBMIDM1LjIsMzkuNSBMIDM3LjQ1LDM5LjUgTCAzNy41LDM5IEMgMzgsMjguOTQgMzYuNjIsMjIuMTUgMzQuMjUsMTcuNjYgQyAzMS44OCwxMy4xNyAyOC40NiwxMS4wMiAyNS4wNiwxMC41IEwgMjQuNTUsMTAuNCB6ICIKICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjsgc3Ryb2tlOm5vbmU7IiAvPgogIDwvZz4KPC9zdmc+Cg==", "wN": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0ib3BhY2l0eToxOyBmaWxsOm5vbmU7IGZpbGwtb3BhY2l0eToxOyBmaWxsLXJ1bGU6ZXZlbm9kZDsgc3Ryb2tlOiMwMDAwMDA7IHN0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDo0OyBzdHJva2UtZGFzaGFycmF5Om5vbmU7IHN0cm9rZS1vcGFjaXR5OjE7IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDAuMykiPgogICAgPHBhdGgKICAgICAgZD0iTSAyMiwxMCBDIDMyLjUsMTEgMzguNSwxOCAzOCwzOSBMIDE1LDM5IEMgMTUsMzAgMjUsMzIuNSAyMywxOCIKICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjsgc3Ryb2tlOiMwMDAwMDA7IiAvPgogICAgPHBhdGgKICAgICAgZD0iTSAyNCwxOCBDIDI0LjM4LDIwLjkxIDE4LjQ1LDI1LjM3IDE2LDI3IEMgMTMsMjkgMTMuMTgsMzEuMzQgMTEsMzEgQyA5Ljk1OCwzMC4wNiAxMi40MSwyNy45NiAxMSwyOCBDIDEwLDI4IDExLjE5LDI5LjIzIDEwLDMwIEMgOSwzMCA1Ljk5NywzMSA2LDI2IEMgNiwyNCAxMiwxNCAxMiwxNCBDIDEyLDE0IDEzLjg5LDEyLjEgMTQsMTAuNSBDIDEzLjI3LDkuNTA2IDEzLjUsOC41IDEzLjUsNy41IEMgMTQuNSw2LjUgMTYuNSwxMCAxNi41LDEwIEwgMTguNSwxMCBDIDE4LjUsMTAgMTkuMjgsOC4wMDggMjEsNyBDIDIyLDcgMjIsMTAgMjIsMTAiCiAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7IHN0cm9rZTojMDAwMDAwOyIgLz4KICAgIDxwYXRoCiAgICAgIGQ9Ik0gOS41IDI1LjUgQSAwLjUgMC41IDAgMSAxIDguNSwyNS41IEEgMC41IDAuNSAwIDEgMSA5LjUgMjUuNSB6IgogICAgICBzdHlsZT0iZmlsbDojMDAwMDAwOyBzdHJva2U6IzAwMDAwMDsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDE1IDE1LjUgQSAwLjUgMS41IDAgMSAxICAxNCwxNS41IEEgMC41IDEuNSAwIDEgMSAgMTUgMTUuNSB6IgogICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjg2NiwwLjUsLTAuNSwwLjg2Niw5LjY5MywtNS4xNzMpIgogICAgICBzdHlsZT0iZmlsbDojMDAwMDAwOyBzdHJva2U6IzAwMDAwMDsiIC8+CiAgPC9nPgo8L3N2Zz4K", "bP": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8cGF0aCBkPSJtIDIyLjUsOSBjIC0yLjIxLDAgLTQsMS43OSAtNCw0IDAsMC44OSAwLjI5LDEuNzEgMC43OCwyLjM4IEMgMTcuMzMsMTYuNSAxNiwxOC41OSAxNiwyMSBjIDAsMi4wMyAwLjk0LDMuODQgMi40MSw1LjAzIEMgMTUuNDEsMjcuMDkgMTEsMzEuNTggMTEsMzkuNSBIIDM0IEMgMzQsMzEuNTggMjkuNTksMjcuMDkgMjYuNTksMjYuMDMgMjguMDYsMjQuODQgMjksMjMuMDMgMjksMjEgMjksMTguNTkgMjcuNjcsMTYuNSAyNS43MiwxNS4zOCAyNi4yMSwxNC43MSAyNi41LDEzLjg5IDI2LjUsMTMgYyAwLC0yLjIxIC0xLjc5LC00IC00LC00IHoiIHN0eWxlPSJvcGFjaXR5OjE7IGZpbGw6IzAwMDAwMDsgZmlsbC1vcGFjaXR5OjE7IGZpbGwtcnVsZTpub256ZXJvOyBzdHJva2U6IzAwMDAwMDsgc3Ryb2tlLXdpZHRoOjEuNTsgc3Ryb2tlLWxpbmVjYXA6cm91bmQ7IHN0cm9rZS1saW5lam9pbjptaXRlcjsgc3Ryb2tlLW1pdGVybGltaXQ6NDsgc3Ryb2tlLWRhc2hhcnJheTpub25lOyBzdHJva2Utb3BhY2l0eToxOyIvPgo8L3N2Zz4K", "wP": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8cGF0aCBkPSJtIDIyLjUsOSBjIC0yLjIxLDAgLTQsMS43OSAtNCw0IDAsMC44OSAwLjI5LDEuNzEgMC43OCwyLjM4IEMgMTcuMzMsMTYuNSAxNiwxOC41OSAxNiwyMSBjIDAsMi4wMyAwLjk0LDMuODQgMi40MSw1LjAzIEMgMTUuNDEsMjcuMDkgMTEsMzEuNTggMTEsMzkuNSBIIDM0IEMgMzQsMzEuNTggMjkuNTksMjcuMDkgMjYuNTksMjYuMDMgMjguMDYsMjQuODQgMjksMjMuMDMgMjksMjEgMjksMTguNTkgMjcuNjcsMTYuNSAyNS43MiwxNS4zOCAyNi4yMSwxNC43MSAyNi41LDEzLjg5IDI2LjUsMTMgYyAwLC0yLjIxIC0xLjc5LC00IC00LC00IHoiIHN0eWxlPSJvcGFjaXR5OjE7IGZpbGw6I2ZmZmZmZjsgZmlsbC1vcGFjaXR5OjE7IGZpbGwtcnVsZTpub256ZXJvOyBzdHJva2U6IzAwMDAwMDsgc3Ryb2tlLXdpZHRoOjEuNTsgc3Ryb2tlLWxpbmVjYXA6cm91bmQ7IHN0cm9rZS1saW5lam9pbjptaXRlcjsgc3Ryb2tlLW1pdGVybGltaXQ6NDsgc3Ryb2tlLWRhc2hhcnJheTpub25lOyBzdHJva2Utb3BhY2l0eToxOyIvPgo8L3N2Zz4K", "bQ": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IgpoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0iZmlsbDojMDAwMDAwO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZCI+CgogICAgPHBhdGggZD0iTSA5LDI2IEMgMTcuNSwyNC41IDMwLDI0LjUgMzYsMjYgTCAzOC41LDEzLjUgTCAzMSwyNSBMIDMwLjcsMTAuOSBMIDI1LjUsMjQuNSBMIDIyLjUsMTAgTCAxOS41LDI0LjUgTCAxNC4zLDEwLjkgTCAxNCwyNSBMIDYuNSwxMy41IEwgOSwyNiB6IgogICAgc3R5bGU9InN0cm9rZS1saW5lY2FwOmJ1dHQ7ZmlsbDojMDAwMDAwIiAvPgogICAgPHBhdGggZD0ibSA5LDI2IGMgMCwyIDEuNSwyIDIuNSw0IDEsMS41IDEsMSAwLjUsMy41IC0xLjUsMSAtMSwyLjUgLTEsMi41IC0xLjUsMS41IDAsMi41IDAsMi41IDYuNSwxIDE2LjUsMSAyMywwIDAsMCAxLjUsLTEgMCwtMi41IDAsMCAwLjUsLTEuNSAtMSwtMi41IC0wLjUsLTIuNSAtMC41LC0yIDAuNSwtMy41IDEsLTIgMi41LC0yIDIuNSwtNCAtOC41LC0xLjUgLTE4LjUsLTEuNSAtMjcsMCB6IiAvPgogICAgPHBhdGggZD0iTSAxMS41LDMwIEMgMTUsMjkgMzAsMjkgMzMuNSwzMCIgLz4KICAgIDxwYXRoIGQ9Im0gMTIsMzMuNSBjIDYsLTEgMTUsLTEgMjEsMCIgLz4KICAgIDxjaXJjbGUgY3g9IjYiIGN5PSIxMiIgcj0iMiIgLz4KICAgIDxjaXJjbGUgY3g9IjE0IiBjeT0iOSIgcj0iMiIgLz4KICAgIDxjaXJjbGUgY3g9IjIyLjUiIGN5PSI4IiByPSIyIiAvPgogICAgPGNpcmNsZSBjeD0iMzEiIGN5PSI5IiByPSIyIiAvPgogICAgPGNpcmNsZSBjeD0iMzkiIGN5PSIxMiIgcj0iMiIgLz4KICAgIDxwYXRoIGQ9Ik0gMTEsMzguNSBBIDM1LDM1IDEgMCAwIDM0LDM4LjUiCiAgICBzdHlsZT0iZmlsbDpub25lOyBzdHJva2U6IzAwMDAwMDtzdHJva2UtbGluZWNhcDpidXR0OyIgLz4KICAgIDxnIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojZmZmZmZmOyI+CiAgICAgIDxwYXRoIGQ9Ik0gMTEsMjkgQSAzNSwzNSAxIDAgMSAzNCwyOSIgLz4KICAgICAgPHBhdGggZD0iTSAxMi41LDMxLjUgTCAzMi41LDMxLjUiIC8+CiAgICAgIDxwYXRoIGQ9Ik0gMTEuNSwzNC41IEEgMzUsMzUgMSAwIDAgMzMuNSwzNC41IiAvPgogICAgICA8cGF0aCBkPSJNIDEwLjUsMzcuNSBBIDM1LDM1IDEgMCAwIDM0LjUsMzcuNSIgLz4KICAgIDwvZz4KICA8L2c+Cjwvc3ZnPgo=", "wQ": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0iZmlsbDojZmZmZmZmO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDoxLjU7c3Ryb2tlLWxpbmVqb2luOnJvdW5kIj4KICAgIDxwYXRoIGQ9Ik0gOSwyNiBDIDE3LjUsMjQuNSAzMCwyNC41IDM2LDI2IEwgMzguNSwxMy41IEwgMzEsMjUgTCAzMC43LDEwLjkgTCAyNS41LDI0LjUgTCAyMi41LDEwIEwgMTkuNSwyNC41IEwgMTQuMywxMC45IEwgMTQsMjUgTCA2LjUsMTMuNSBMIDksMjYgeiIvPgogICAgPHBhdGggZD0iTSA5LDI2IEMgOSwyOCAxMC41LDI4IDExLjUsMzAgQyAxMi41LDMxLjUgMTIuNSwzMSAxMiwzMy41IEMgMTAuNSwzNC41IDExLDM2IDExLDM2IEMgOS41LDM3LjUgMTEsMzguNSAxMSwzOC41IEMgMTcuNSwzOS41IDI3LjUsMzkuNSAzNCwzOC41IEMgMzQsMzguNSAzNS41LDM3LjUgMzQsMzYgQyAzNCwzNiAzNC41LDM0LjUgMzMsMzMuNSBDIDMyLjUsMzEgMzIuNSwzMS41IDMzLjUsMzAgQyAzNC41LDI4IDM2LDI4IDM2LDI2IEMgMjcuNSwyNC41IDE3LjUsMjQuNSA5LDI2IHoiLz4KICAgIDxwYXRoIGQ9Ik0gMTEuNSwzMCBDIDE1LDI5IDMwLDI5IDMzLjUsMzAiIHN0eWxlPSJmaWxsOm5vbmUiLz4KICAgIDxwYXRoIGQ9Ik0gMTIsMzMuNSBDIDE4LDMyLjUgMjcsMzIuNSAzMywzMy41IiBzdHlsZT0iZmlsbDpub25lIi8+CiAgICA8Y2lyY2xlIGN4PSI2IiBjeT0iMTIiIHI9IjIiIC8+CiAgICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjkiIHI9IjIiIC8+CiAgICA8Y2lyY2xlIGN4PSIyMi41IiBjeT0iOCIgcj0iMiIgLz4KICAgIDxjaXJjbGUgY3g9IjMxIiBjeT0iOSIgcj0iMiIgLz4KICAgIDxjaXJjbGUgY3g9IjM5IiBjeT0iMTIiIHI9IjIiIC8+CiAgPC9nPgo8L3N2Zz4K", "bR": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0ib3BhY2l0eToxOyBmaWxsOiMwMDAwMDA7IGZpbGwtb3BhY2l0eToxOyBmaWxsLXJ1bGU6ZXZlbm9kZDsgc3Ryb2tlOiMwMDAwMDA7IHN0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDo0OyBzdHJva2UtZGFzaGFycmF5Om5vbmU7IHN0cm9rZS1vcGFjaXR5OjE7IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDAuMykiPgogICAgPHBhdGgKICAgICAgZD0iTSA5LDM5IEwgMzYsMzkgTCAzNiwzNiBMIDksMzYgTCA5LDM5IHogIgogICAgICBzdHlsZT0ic3Ryb2tlLWxpbmVjYXA6YnV0dDsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDEyLjUsMzIgTCAxNCwyOS41IEwgMzEsMjkuNSBMIDMyLjUsMzIgTCAxMi41LDMyIHogIgogICAgICBzdHlsZT0ic3Ryb2tlLWxpbmVjYXA6YnV0dDsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDEyLDM2IEwgMTIsMzIgTCAzMywzMiBMIDMzLDM2IEwgMTIsMzYgeiAiCiAgICAgIHN0eWxlPSJzdHJva2UtbGluZWNhcDpidXR0OyIgLz4KICAgIDxwYXRoCiAgICAgIGQ9Ik0gMTQsMjkuNSBMIDE0LDE2LjUgTCAzMSwxNi41IEwgMzEsMjkuNSBMIDE0LDI5LjUgeiAiCiAgICAgIHN0eWxlPSJzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDE0LDE2LjUgTCAxMSwxNCBMIDM0LDE0IEwgMzEsMTYuNSBMIDE0LDE2LjUgeiAiCiAgICAgIHN0eWxlPSJzdHJva2UtbGluZWNhcDpidXR0OyIgLz4KICAgIDxwYXRoCiAgICAgIGQ9Ik0gMTEsMTQgTCAxMSw5IEwgMTUsOSBMIDE1LDExIEwgMjAsMTEgTCAyMCw5IEwgMjUsOSBMIDI1LDExIEwgMzAsMTEgTCAzMCw5IEwgMzQsOSBMIDM0LDE0IEwgMTEsMTQgeiAiCiAgICAgIHN0eWxlPSJzdHJva2UtbGluZWNhcDpidXR0OyIgLz4KICAgIDxwYXRoCiAgICAgIGQ9Ik0gMTIsMzUuNSBMIDMzLDM1LjUgTCAzMywzNS41IgogICAgICBzdHlsZT0iZmlsbDpub25lOyBzdHJva2U6I2ZmZmZmZjsgc3Ryb2tlLXdpZHRoOjE7IHN0cm9rZS1saW5lam9pbjptaXRlcjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDEzLDMxLjUgTCAzMiwzMS41IgogICAgICBzdHlsZT0iZmlsbDpub25lOyBzdHJva2U6I2ZmZmZmZjsgc3Ryb2tlLXdpZHRoOjE7IHN0cm9rZS1saW5lam9pbjptaXRlcjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDE0LDI5LjUgTCAzMSwyOS41IgogICAgICBzdHlsZT0iZmlsbDpub25lOyBzdHJva2U6I2ZmZmZmZjsgc3Ryb2tlLXdpZHRoOjE7IHN0cm9rZS1saW5lam9pbjptaXRlcjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDE0LDE2LjUgTCAzMSwxNi41IgogICAgICBzdHlsZT0iZmlsbDpub25lOyBzdHJva2U6I2ZmZmZmZjsgc3Ryb2tlLXdpZHRoOjE7IHN0cm9rZS1saW5lam9pbjptaXRlcjsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDExLDE0IEwgMzQsMTQiCiAgICAgIHN0eWxlPSJmaWxsOm5vbmU7IHN0cm9rZTojZmZmZmZmOyBzdHJva2Utd2lkdGg6MTsgc3Ryb2tlLWxpbmVqb2luOm1pdGVyOyIgLz4KICA8L2c+Cjwvc3ZnPgo=", "wR": "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgdmlld0JveD0iMCAwIDQ1IDQ1IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1Ij4KICA8ZyBzdHlsZT0ib3BhY2l0eToxOyBmaWxsOiNmZmZmZmY7IGZpbGwtb3BhY2l0eToxOyBmaWxsLXJ1bGU6ZXZlbm9kZDsgc3Ryb2tlOiMwMDAwMDA7IHN0cm9rZS13aWR0aDoxLjU7IHN0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDo0OyBzdHJva2UtZGFzaGFycmF5Om5vbmU7IHN0cm9rZS1vcGFjaXR5OjE7IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDAuMykiPgogICAgPHBhdGgKICAgICAgZD0iTSA5LDM5IEwgMzYsMzkgTCAzNiwzNiBMIDksMzYgTCA5LDM5IHogIgogICAgICBzdHlsZT0ic3Ryb2tlLWxpbmVjYXA6YnV0dDsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDEyLDM2IEwgMTIsMzIgTCAzMywzMiBMIDMzLDM2IEwgMTIsMzYgeiAiCiAgICAgIHN0eWxlPSJzdHJva2UtbGluZWNhcDpidXR0OyIgLz4KICAgIDxwYXRoCiAgICAgIGQ9Ik0gMTEsMTQgTCAxMSw5IEwgMTUsOSBMIDE1LDExIEwgMjAsMTEgTCAyMCw5IEwgMjUsOSBMIDI1LDExIEwgMzAsMTEgTCAzMCw5IEwgMzQsOSBMIDM0LDE0IgogICAgICBzdHlsZT0ic3Ryb2tlLWxpbmVjYXA6YnV0dDsiIC8+CiAgICA8cGF0aAogICAgICBkPSJNIDM0LDE0IEwgMzEsMTcgTCAxNCwxNyBMIDExLDE0IiAvPgogICAgPHBhdGgKICAgICAgZD0iTSAzMSwxNyBMIDMxLDI5LjUgTCAxNCwyOS41IEwgMTQsMTciCiAgICAgIHN0eWxlPSJzdHJva2UtbGluZWNhcDpidXR0OyBzdHJva2UtbGluZWpvaW46bWl0ZXI7IiAvPgogICAgPHBhdGgKICAgICAgZD0iTSAzMSwyOS41IEwgMzIuNSwzMiBMIDEyLjUsMzIgTCAxNCwyOS41IiAvPgogICAgPHBhdGgKICAgICAgZD0iTSAxMSwxNCBMIDM0LDE0IgogICAgICBzdHlsZT0iZmlsbDpub25lOyBzdHJva2U6IzAwMDAwMDsgc3Ryb2tlLWxpbmVqb2luOm1pdGVyOyIgLz4KICA8L2c+Cjwvc3ZnPgo="};   // Classic pieces by Colin M.L. Burnett (Wikimedia Commons, BSD)
+  const PIECES = {
+    R:{ name:'rook',   letter:'R', goal:'The rook moves in straight lines.', bad:'A rook moves only in straight lines.' },
+    B:{ name:'bishop', letter:'B', goal:'The bishop moves diagonally and stays on one color.', bad:'A bishop moves only diagonally.' },
+    Q:{ name:'queen',  letter:'Q', goal:'The queen moves like a rook and a bishop combined.', bad:'The queen moves straight or diagonally.' },
+    K:{ name:'king',   letter:'K', goal:'The king moves one square in any direction.', bad:'The king moves one square at a time.' },
+    N:{ name:'knight', letter:'N', goal:'The knight jumps in an L shape, over anything.', bad:'A knight jumps in an L shape.' },
+    P:{ name:'pawn',   letter:'',  goal:'The pawn moves straight forward (two squares from its first square) and captures only diagonally, one square.', bad:'A pawn moves straight forward, and diagonally only to capture.' },
+  };
+  const ORDER = ['R','B','Q','K','N','P'];
+  const BLACK_NAME = { P:'pawn', N:'knight', B:'bishop', R:'rook', Q:'queen', K:'king' };
+  const $ = id => document.getElementById(id);
+  const cap1 = s => s[0].toUpperCase() + s.slice(1);
+  const starSVG = (on = true) => `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${on ? 'i-star' : 'i-star-off'}"/></svg>`;
+
+  // ---------- progress (this browser only) ----------
+  const KEY = WEB ? 'star-route-web.v1' : 'star-route.v3';
+  let save = { progress:{}, unlockAll:false, autoNext:false, coins:30, premium:false, tries:{}, seen:{}, bestMoves:{}, hints:{}, routes:{} };
+  try { const raw = localStorage.getItem(KEY); if (raw) save = Object.assign(save, JSON.parse(raw)); } catch (e) {}
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} };
+  const best = (p, n) => (save.progress[p] || {})[n] || 0;
+  const unlocked = (p, n) => WEB || save.unlockAll || n === 1 || best(p, n - 1) > 0 || best(p, n) > 0;
+  const PLUS_TIERS = ['master', 'gm'];
+  const tierLocked = n => !WEB && !save.premium && PLUS_TIERS.includes(E.tierOf(n).key);
+  const firstOpen = p => { let n = 1; while (n < E.LEVELS && best(p, n)) n++; while (n > 1 && tierLocked(n)) n--; return n; };
+
+  // ---------- coins ----------
+  const COST = { hint:5, route:15 }, ROUTE_TRIES = 3;
+  const coinSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-coin"/></svg>';
+  const lockSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg>';
+  const lvKey = () => S.piece + S.n;
+  const bumpStat = (obj, p) => { save[obj][p] = (save[obj][p] || 0) + 1; };
+  function renderCoins(bump){
+    $('coinCount').textContent = save.coins; $('mCoins').textContent = save.coins;
+    if (bump){ const c = $('coinBtn'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+  }
+  function changeCoins(d){ save.coins = Math.max(0, save.coins + d); persist(); renderCoins(true); }
+  function addTry(){ const k = lvKey(); save.tries[k] = (save.tries[k] || 0) + 1; persist(); }
+  function routeInfo(){
+    const k = lvKey(), own = WEB || S.test || best(S.piece, S.n) === 3 || !!save.seen[k];
+    const need = save.premium ? 1 : ROUTE_TRIES, tries = save.tries[k] || 0;
+    return { open: own || tries >= need, cost: own || save.premium ? 0 : COST.route, tries, need };
+  }
+
+  let S = null, replayTimer = null, viewTier = null;
+
+  // ---------- board DOM ----------
+  const boardEl = $('board'), wrap = $('wrap'), hero = $('hero');
+  const squares = [];
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++){
+    const s = (7 - row) * 8 + col, d = document.createElement('div');
+    d.className = 'sq' + ((F(s) + Rk(s)) % 2 === 0 ? ' d' : '');
+    d.dataset.sq = s; d.setAttribute('role', 'gridcell');
+    boardEl.appendChild(d); squares[s] = d;
+  }
+
+  const plusFrom = () => { let n = 1; while (n <= E.LEVELS && !PLUS_TIERS.includes(E.tierOf(n).key)) n++; return n; };
+  const plusMsg = () => `Levels ${plusFrom()}–${E.LEVELS} (Master and Grandmaster) are part of Star Route Plus.`;
+  function startLevel(piece, n, force){
+    cancelAuto();
+    if (tierLocked(n) && !force){ openModal('shop', plusMsg()); return; }
+    clearInterval(replayTimer); replayTimer = null;
+    const L = E.level(piece, n);
+    S = { piece, n, L, pos:L.start, mask:0, hist:[], log:[], hints:0, done:false, replay:false, last:null, gotSq:null, hint:null, warned:false, test:!!force };
+    $('review').hidden = true; $('table').hidden = false;
+    $('result').hidden = true; $('boardMsg').innerHTML = '';
+    $('heroImg').src = IMG['w' + piece];
+    hero.style.transition = 'none'; renderAll(); void hero.offsetWidth; hero.style.transition = '';
+    if (!L.path){ goal('This puzzle has no solution. Check its data in Review puzzles.', 'warn'); return; }
+    goalStart();
+  }
+  function goalStart(){
+    const L = S.L, P = PIECES[S.piece];
+    let t;
+    if (S.piece === 'P') t = `${P.goal} Capture every star in ${L.opt} moves.`;
+    else t = `${P.goal} Grab all the stars in ${L.opt} moves!`;
+    if (L.guards.length) t += ' Never land on a red square.';
+    if (L.tricky && S.n >= 5) t += ' The nearest star is not always the best first step.';
+    if (S.test) t += ' Test play from Review: the best route is free and doesn’t need tries.';
+    goal(t);
+  }
+  function goal(text, kind){ const g = $('goal'); g.textContent = text; g.className = 'goal' + (kind ? ' ' + kind : ''); }
+  function boardMsg(text){ const m = $('boardMsg'); m.innerHTML = ''; void m.offsetWidth; m.innerHTML = `<span>${text}</span>`; }
+
+  function renderAll(){ renderSide(); renderHead(); renderLevels(); renderLegend(); render(); }
+
+  function render(){
+    const L = S.L, dests = new Set(S.done || S.replay || S.review ? [] : E.legal(L, S.pos, S.mask));
+    const guardSq = new Map(L.guards.map(g => [g.sq, g]));
+    const nums = {};
+    if (S.review && L.path) L.path.forEach((s, i) => { (nums[s] || (nums[s] = [])).push(i + 1); });
+    for (let s = 0; s < 64; s++){
+      const el = squares[s]; let html = '';
+      const isStar = L.stars.includes(s), ci = L.caps.indexOf(s), got = (L.tbit[s] & S.mask) !== 0;
+      const isTarget = (isStar || ci >= 0) && !got;
+      if (L.blocks.includes(s)) html += `<img src="${IMG.wP}" alt="">`;
+      if (guardSq.has(s)) html += `<img src="${IMG['b' + guardSq.get(s).type]}" alt="">`;
+      if (isStar && !got) html += `<svg class="star" viewBox="0 0 24 24"><use href="#i-star"/></svg>`;
+      if (ci >= 0 && !got) html += `<img src="${IMG['b' + L.capTypes[ci]]}" alt="">`;
+      if (got && s === S.gotSq) html += `<svg class="star got" viewBox="0 0 24 24"><use href="#i-star"/></svg>`;
+      if (nums[s]) html += `<span class="pnum">${nums[s].join(',')}</span>`;
+      if (F(s) === 7) html += `<span class="coord r">${Rk(s) + 1}</span>`;
+      if (Rk(s) === 0) html += `<span class="coord f">${FILES[F(s)]}</span>`;
+      el.innerHTML = html;
+      el.className = 'sq' + ((F(s) + Rk(s)) % 2 === 0 ? ' d' : '')
+        + (dests.has(s) ? ' dest' : '') + (dests.has(s) && isTarget ? ' oc' : '')
+        + (guardSq.has(s) ? ' guarded' : L.att[s] ? ' danger' : '')
+        + (S.last && (S.last[0] === s || S.last[1] === s) ? ' last' : '')
+        + (S.hint === s ? ' hint' : '')
+        + (s === S.pos && !S.done && !S.replay ? ' sel' : '');
+      let label = sqName(s);
+      if (s === S.pos) label += ', your ' + PIECES[S.piece].name;
+      else if (isStar && !got) label += ', star';
+      else if (ci >= 0 && !got) label += ', black ' + BLACK_NAME[L.capTypes[ci]] + ' to capture';
+      else if (guardSq.has(s)) label += ', guard';
+      else if (L.blocks.includes(s)) label += ', your pawn';
+      if (dests.has(s)) label += ', can move here';
+      el.setAttribute('aria-label', label);
+    }
+    hero.style.setProperty('--c', F(S.pos)); hero.style.setProperty('--r', 7 - Rk(S.pos));
+    renderScore();
+  }
+
+  const popcount = m => { let c = 0; while (m){ m &= m - 1; c++; } return c; };
+  function renderScore(){
+    const L = S.L, moves = S.log.length;
+    $('stStars').textContent = `${popcount(S.mask)}/${L.targets.length}`;
+    $('stMoves').textContent = moves;
+    $('stMoves').className = 'v' + (moves > L.opt ? ' over' : '');
+    $('stPar').textContent = L.opt;
+    $('bUndo').disabled = !S.hist.length || S.replay;
+    $('bRestart').disabled = S.replay;
+    $('bHint').disabled = S.done || S.replay;
+    $('bHint').innerHTML = `Hint<span class="cost">${coinSVG}${COST.hint}</span>`;
+    const r = routeInfo();
+    const tag = !r.open ? `<span class="cost"><span class="lk">${lockSVG}</span>${r.tries}/${r.need} tries</span>`
+      : r.cost ? `<span class="cost">${coinSVG}${r.cost}</span>` : '<span class="cost">Free</span>';
+    $('bRoute').innerHTML = 'Best route' + tag;
+    $('bRoute').disabled = S.replay;
+    $('rWatch').innerHTML = !r.open ? `Best route unlocks after ${r.need} tries` : `Show the best route${r.cost ? ` · ${r.cost} coins` : ''}`;
+    $('rWatch').disabled = !r.open;
+    const ol = $('log');
+    ol.innerHTML = S.log.length
+      ? S.log.map((m, i) => `<li class="${m.got ? 'got' : ''}"><span class="n">${i + 1}.</span><span class="m">${m.san}</span></li>`).join('')
+      : `<li class="empty">${S.replay ? 'Best route…' : 'No moves yet.'}</li>`;
+  }
+  function renderHead(){
+    const L = S.L, P = PIECES[S.piece];
+    $('goalIcon').src = IMG['w' + S.piece];
+    $('goalTitle').textContent = 'The ' + P.name;
+    $('goalSub').textContent = `Level ${S.n} of ${E.LEVELS} · ${L.tier.name}` + (L.tricky && S.n > 40 ? ' · Tricky' : '');
+  }
+  function renderSide(){
+    let solved = 0;
+    $('stages').innerHTML = ORDER.map(p => {
+      const prog = save.progress[p] || {}, done = Object.keys(prog).length, stars = Object.values(prog).reduce((a, b) => a + b, 0);
+      solved += done;
+      return `<button class="stage${p === S.piece ? ' active' : ''}" data-p="${p}"><img src="${IMG['w' + p]}" alt=""><span class="info"><span class="nm">${cap1(PIECES[p].name)}</span><span class="meta"><span>${done}/${E.LEVELS} levels</span><span>${stars} ★</span></span><span class="bar"><i style="width:${(done / E.LEVELS * 100).toFixed(1)}%"></i></span></span></button>`;
+    }).join('');
+    $('sideSub').textContent = `${solved} of ${E.LEVELS * ORDER.length} levels solved`;
+    $('unlockAll').checked = !!save.unlockAll;
+  }
+  function renderLevels(){
+    const T = S.L.tier;
+    $('tierDesc').textContent = `${T.name}: ${T.desc}` + (tierLocked(plusFrom()) ? ` Levels ${plusFrom()}–${E.LEVELS} need Star Route Plus.` : '');
+    $('lvlCount').textContent = `${Object.keys(save.progress[S.piece] || {}).length}/${E.LEVELS} solved`;
+    let html = '';
+    for (let n = 1; n <= E.LEVELS; n++){
+      if (tierLocked(n)){ html += `<button class="lv pay" data-n="${n}" title="${E.tierOf(n).name}" aria-label="Level ${n}, needs Star Route Plus">${n}<span class="lk">${lockSVG}</span></button>`; continue; }
+      const c = best(S.piece, n), open = unlocked(S.piece, n);
+      html += `<button class="lv${c ? ' done' : ''}${c === 3 ? ' perfect' : ''}${n === S.n ? ' cur' : ''}" data-n="${n}" ${open ? '' : 'disabled'} aria-label="Level ${n}${c ? ', ' + c + ' stars' : ''}">${n}${c ? `<span class="s">${[1,2,3].map(i => i <= c ? starSVG() : '').join('')}</span>` : ''}</button>`;
+    }
+    $('levels').innerHTML = html;
+  }
+  function renderLegend(){
+    const L = S.L, items = [];
+    if (L.stars.length) items.push(`<div><span class="ic">${starSVG()}</span>${S.piece === 'P' ? 'The pawn captures a star only diagonally, one square forward. It can\u2019t walk onto a star straight ahead.' : 'RBQ'.includes(S.piece) ? 'Stars stop your piece: land on each one to collect it, then move on.' : 'Land on a star to collect it.'}</div>`);
+    if (L.caps.length) items.push(`<div><span class="ic"><img src="${IMG.bP}" alt=""></span>Capture the black pieces.</div>`);
+    if (L.blocks.length) items.push(`<div><span class="ic"><img src="${IMG.wP}" alt=""></span>Your own pawns block the way.</div>`);
+    if (L.guards.length) items.push(`<div><span class="ic red"><img src="${IMG.bN}" alt=""></span>Guards watch the red squares. Don't land there or capture a guard.</div>`);
+    $('legend').innerHTML = items.join('');
+    $('legend').hidden = !items.length;
+  }
+
+  // ---------- moves ----------
+  function san(from, to, capture){
+    if (S.piece === 'P') return capture ? `${FILES[F(from)]}x${sqName(to)}` : sqName(to);
+    return PIECES[S.piece].letter + sqName(to);
+  }
+  function doMove(to, instant){
+    const L = S.L, from = S.pos, capture = L.isCap[to] && !(S.mask & L.tbit[to]), gotNew = (L.tbit[to] & ~S.mask) !== 0;
+    S.hist.push({ pos:S.pos, mask:S.mask, last:S.last });
+    S.mask |= L.tbit[to]; S.pos = to; S.last = [from, to]; S.hint = null; S.gotSq = gotNew ? to : null;
+    S.log.push({ san: san(from, to, capture), got: gotNew });
+    if (instant){ hero.style.transition = 'none'; }
+    render();
+    if (instant){ void hero.offsetWidth; hero.style.transition = ''; }
+    const left = L.targets.length - popcount(S.mask), moves = S.log.length;
+    if (S.mask === L.full){ finish(); return; }
+    if (S.piece === 'P' && !E.solve(L, S.pos, S.mask)){ goal('The pawn is stuck and can’t reach every target. Undo or restart.', 'warn'); return; }
+    if (moves >= L.opt && !S.warned){ S.warned = true; goal(`That's all ${L.opt} par moves, with ${left} still to collect. Finish, or restart and look for a shorter route.`, 'warn'); return; }
+    if (gotNew) goal(left === 1 ? 'One more!' : `${left} to go.`);
+  }
+  function finish(){
+    S.done = true;
+    const L = S.L, moves = S.log.length, opt = L.opt, old = best(S.piece, S.n);
+    let stars = moves <= opt ? 3 : moves <= opt + Math.max(1, Math.ceil(opt * 0.25)) ? 2 : 1;
+    if (stars < 3 && !S.test) addTry();
+    const prog = save.progress[S.piece] || (save.progress[S.piece] = {});
+    prog[S.n] = Math.max(prog[S.n] || 0, stars);
+    const bm = save.bestMoves[S.piece] || (save.bestMoves[S.piece] = {});
+    bm[S.n] = Math.min(bm[S.n] || Infinity, moves);
+    const gain = WEB ? 0 : Math.max(0, stars - old) * 3 + (stars === 3 && old < 3 ? 4 : 0);
+    persist();
+    if (gain) changeCoins(gain);
+    render(); renderSide(); renderLevels();
+    $('rStars').innerHTML = [1,2,3].map(i => starSVG(i <= stars)).join('');
+    const head = stars === 3 ? 'Perfect!' : stars === 2 ? 'Great job!' : 'Level complete';
+    $('rHead').textContent = head;
+    let line = moves <= opt ? `${moves} moves, the shortest route.` : `${moves} moves. The shortest route takes ${opt}.`;
+    if (gain) line += ` +${gain} coins.`;
+    $('rLine').textContent = line;
+    $('rNext').textContent = S.n < E.LEVELS ? 'Next level' : 'Next piece';
+    $('result').hidden = false;
+    $('autoNext').checked = !!save.autoNext;
+    if (save.autoNext) startAutoNext();
+    goal(stars === 3 ? 'You found the most efficient route.' : 'All collected. Can you do it in fewer moves?', 'win');
+    boardMsg(head);
+  }
+  function shake(s){ const el = squares[s]; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+  function refuse(to){
+    const L = S.L; shake(to);
+    const g = L.guards.find(x => x.sq === to);
+    const slides = ('RBQ'.includes(S.piece) && couldReach(to)) || (S.piece === 'P' && Rk(S.pos) === 1 && to === S.pos + 16);
+    const blk = slides ? E.slideBlocker(L, S.pos, to, S.mask) : null;
+    const starAhead = S.piece === 'P' && L.stars.includes(to) && !(S.mask & L.tbit[to]) && F(to) === F(S.pos) && Rk(to) > Rk(S.pos);
+    if (starAhead) goal(`A pawn can\u2019t take the star on ${sqName(to)} straight ahead. It captures only diagonally.`, 'warn');
+    else if (L.blocks.includes(to)) goal(`Your own pawn is on ${sqName(to)}.`, 'warn');
+    else if (blk && blk.kind === 'star') goal(`The star on ${sqName(blk.sq)} is in the way. Stop on it first to collect it.`, 'warn');
+    else if (blk) goal(`The ${L.blocks.includes(blk.sq) ? 'pawn' : BLACK_NAME[(L.guards.find(g => g.sq === blk.sq) || {}).type] || 'piece'} on ${sqName(blk.sq)} is in the way.`, 'warn');
+    else if (g) goal(`The ${BLACK_NAME[g.type]} on ${sqName(to)} is a guard. Guards can't be captured.`, 'warn');
+    else if (L.att[to] && couldReach(to)){ const a = L.guards[L.by[to]]; goal(`${sqName(to)} is watched by the ${BLACK_NAME[a.type]} on ${sqName(a.sq)}. Find a safe square.`, 'warn'); }
+    else goal(`${PIECES[S.piece].bad} It can't reach ${sqName(to)} from ${sqName(S.pos)}.`, 'warn');
+  }
+  function couldReach(to){
+    const L = S.L, saved = L.att; L.att = new Uint8Array(64);
+    let ok;
+    if (S.piece === 'P') ok = E.legal(L, S.pos, S.mask).includes(to);
+    else { const df = F(to) - F(S.pos), dr = Rk(to) - Rk(S.pos), o = df === 0 || dr === 0, d = Math.abs(df) === Math.abs(dr);
+      ok = { R:o, B:d, Q:o || d, K:Math.max(Math.abs(df), Math.abs(dr)) === 1, N:Math.abs(df * dr) === 2 }[S.piece]; }
+    L.att = saved; return ok;
+  }
+
+  // ---------- input: click or drag, like a normal board ----------
+  let drag = null;
+  const sqAt = (x, y) => {
+    const r = wrap.getBoundingClientRect();
+    const c = Math.floor((x - r.left) / r.width * 8), row = Math.floor((y - r.top) / r.height * 8);
+    if (c < 0 || c > 7 || row < 0 || row > 7) return -1;
+    return (7 - row) * 8 + c;
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (!S || S.done || S.replay || S.review || e.button > 0) return;
+    const s = sqAt(e.clientX, e.clientY); if (s < 0) return;
+    if (s === S.pos){
+      drag = { id:e.pointerId, x0:e.clientX, y0:e.clientY, moved:false, over:-1 };
+      wrap.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    if (E.legal(S.L, S.pos, S.mask).includes(s)) doMove(s, false); else refuse(s);
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 4) return;
+    drag.moved = true;
+    const r = wrap.getBoundingClientRect(), sz = r.width / 8;
+    hero.classList.add('dragging');
+    hero.style.setProperty('--dx', (e.clientX - r.left - sz / 2) + 'px');
+    hero.style.setProperty('--dy', (e.clientY - r.top - sz / 2) + 'px');
+    const s = sqAt(e.clientX, e.clientY);
+    if (s !== drag.over){ if (drag.over >= 0) squares[drag.over].classList.remove('over'); drag.over = s; if (s >= 0) squares[s].classList.add('over'); }
+  });
+  const endDrag = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (d.over >= 0) squares[d.over].classList.remove('over');
+    hero.classList.remove('dragging');
+    if (!d.moved) return;
+    const s = sqAt(e.clientX, e.clientY);
+    if (s >= 0 && s !== S.pos){
+      if (E.legal(S.L, S.pos, S.mask).includes(s)){ doMove(s, true); return; }
+      refuse(s);
+    }
+    hero.style.transition = 'none'; render(); void hero.offsetWidth; hero.style.transition = '';
+  };
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointercancel', endDrag);
+
+  // ---------- controls ----------
+  $('bUndo').onclick = () => {
+    cancelAuto();
+    if (!S.hist.length) return;
+    const h = S.hist.pop(); S.pos = h.pos; S.mask = h.mask; S.last = h.last; S.log.pop();
+    S.done = false; S.gotSq = null; S.hint = null; $('result').hidden = true; render(); goal('Move taken back.');
+  };
+  $('bRestart').onclick = () => { if (!S.done && S.log.length && !S.test) addTry(); startLevel(S.piece, S.n, S.test); };
+  $('bHint').onclick = () => {
+    const path = E.solve(S.L, S.pos, S.mask);
+    if (!path){ goal('No route works from here. Undo or restart.', 'warn'); return; }
+    if (!WEB && save.coins < COST.hint){ openModal('shop', `A hint costs ${COST.hint} coins and you have ${save.coins}. Finish levels with more stars to earn coins.`); return; }
+    if (!WEB) changeCoins(-COST.hint); bumpStat('hints', S.piece); persist();
+    S.hints++; S.hint = path[0]; render();
+    goal(`Try ${sqName(path[0])}. The best route from here takes ${path.length} more.`);
+  };
+  $('rRetry').onclick = () => startLevel(S.piece, S.n, S.test);
+  $('rNext').onclick = () => { if (S.n < E.LEVELS) startLevel(S.piece, S.n + 1, S.test); else startLevel(ORDER[(ORDER.indexOf(S.piece) + 1) % ORDER.length], 1); };
+  function askRoute(){
+    const r = routeInfo();
+    if (!r.open){
+      const left = r.need - r.tries;
+      goal(`Keep trying first! The best route unlocks after ${r.need} tries: ${left} more to go. Finishing, or restarting after a move, counts as a try.`, 'warn'); return;
+    }
+    if (r.cost > save.coins){ openModal('shop', `The best route costs ${r.cost} coins and you have ${save.coins}.`); return; }
+    if (r.cost) changeCoins(-r.cost);
+    if (!S.test && !save.seen[lvKey()] && best(S.piece, S.n) < 3){ save.seen[lvKey()] = 1; bumpStat('routes', S.piece); }
+    persist(); watchRoute();
+  }
+  $('bRoute').onclick = askRoute;
+
+  // ---------- auto-advance to the next level ----------
+  let autoTimer = null;
+  const nextLabel = () => S && S.n < E.LEVELS ? 'Next level' : 'Next piece';
+  function cancelAuto(){
+    if (autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+    $('rStay').hidden = true;
+    if (S) $('rNext').textContent = nextLabel();
+  }
+  function startAutoNext(){
+    cancelAuto();
+    if (S.n < E.LEVELS && tierLocked(S.n + 1) && !S.test) return;   // don't jump into the shop by itself
+    // Move on right away; the short pause only lets the last move finish sliding.
+    autoTimer = setTimeout(() => { autoTimer = null; $('rNext').click(); }, 500);
+  }
+  $('rStay').onclick = cancelAuto;
+
+  // ---------- reset progress (coins and settings like piece set and auto-advance are kept) ----------
+  const showReset = on => { $('resetConfirm').hidden = !on; $('resetBtn').hidden = on; };
+  if (WEB) $('resetConfirm').querySelector('span').textContent = 'Delete all stars and level progress, and start from zero?';
+  $('resetBtn').onclick = () => showReset(true);
+  $('resetNo').onclick = () => showReset(false);
+  $('resetYes').onclick = () => {
+    Object.assign(save, { progress:{}, bestMoves:{}, tries:{}, seen:{}, hints:{}, routes:{} });   // coins are kept
+    persist(); showReset(false); renderCoins(false);
+    startLevel('R', 1);
+    goal('Progress reset. Starting again from zero.');
+  };
+
+  $('autoNext').onchange = e => {
+    save.autoNext = e.target.checked; persist();
+    if (save.autoNext && S.done && !$('result').hidden) startAutoNext(); else cancelAuto();
+  };
+  $('rWatch').onclick = askRoute;
+  function watchRoute(){
+    cancelAuto();
+    clearInterval(replayTimer);
+    const L = S.L, path = L.path.slice();
+    $('result').hidden = true; $('boardMsg').innerHTML = '';
+    Object.assign(S, { pos:L.start, mask:0, log:[], hist:[], last:null, gotSq:null, hint:null, replay:true });
+    goal(`The shortest route: ${L.opt} moves.`); render();
+    replayTimer = setInterval(() => {
+      if (!path.length){ clearInterval(replayTimer); replayTimer = null; S.replay = false; S.done = true; render(); goal(`That's par: ${L.opt} moves. Press Restart to play it yourself.`, 'win'); return; }
+      const to = path.shift(), from = S.pos, cap = L.isCap[to] && !(S.mask & L.tbit[to]), gotNew = (L.tbit[to] & ~S.mask) !== 0;
+      S.mask |= L.tbit[to]; S.pos = to; S.last = [from, to]; S.gotSq = gotNew ? to : null;
+      S.log.push({ san: san(from, to, cap), got: gotNew }); render();
+    }, 700);
+  }
+  $('stages').addEventListener('click', e => {
+    const b = e.target.closest('.stage'); if (!b) return;
+    if (S.review) openReview(b.dataset.p, 1); else startLevel(b.dataset.p, firstOpen(b.dataset.p));
+  });
+  $('levels').addEventListener('click', e => { const b = e.target.closest('.lv'); if (b && !b.disabled) startLevel(S.piece, +b.dataset.n); });
+
+  // ---------- review mode (for checking puzzles before release) ----------
+  const RKEY = 'star-route.review.v2';
+  let rv = {};
+  try { rv = JSON.parse(localStorage.getItem(RKEY) || '{}') || {}; } catch (e) {}
+  const saveRv = () => { try { localStorage.setItem(RKEY, JSON.stringify(rv)); } catch (e) {} };
+  const SEQ = []; ORDER.forEach(p => { for (let n = 1; n <= E.LEVELS; n++) SEQ.push(p + n); });
+  function openReview(piece, n){
+    clearInterval(replayTimer); replayTimer = null;
+    const L = E.level(piece, n);
+    S = { piece, n, L, pos:L.start, mask:0, hist:[], log:[], hints:0, done:false, replay:false, last:null, gotSq:null, hint:null, review:true };
+    $('table').hidden = true; $('review').hidden = false; $('result').hidden = true; $('boardMsg').innerHTML = '';
+    $('heroImg').src = IMG['w' + piece];
+    hero.style.transition = 'none'; renderSide(); render(); void hero.offsetWidth; hero.style.transition = '';
+    renderReview();
+  }
+  function solutionSAN(L){
+    const out = []; let pos = L.start, mask = 0;
+    for (const to of L.path){
+      const cap = L.isCap[to] && !(mask & L.tbit[to]);
+      out.push(san(pos, to, cap)); mask |= L.tbit[to]; pos = to;
+    }
+    return out;
+  }
+  function renderReview(){
+    const L = S.L, P = PIECES[S.piece], k = S.piece + S.n, r = rv[k] || {};
+    $('rvIcon').src = IMG['w' + S.piece];
+    $('rvTitle').textContent = `${cap1(P.name)} · Level ${S.n}`;
+    const bits = [L.tier.name, `${L.stars.length} star${L.stars.length === 1 ? '' : 's'}`];
+    if (L.caps.length) bits.push(`${L.caps.length} to capture`);
+    if (L.blocks.length) bits.push(`${L.blocks.length} pawn${L.blocks.length === 1 ? '' : 's'}`);
+    if (L.guards.length) bits.push(`${L.guards.length} guard${L.guards.length === 1 ? '' : 's'}`);
+    $('rvSub').textContent = bits.join(' · ');
+    const b = $('rvBadge'); b.textContent = r.s === 'ok' ? 'Approved' : r.s === 'flag' ? 'Flagged' : 'Not reviewed'; b.className = 'rv-badge' + (r.s ? ' ' + r.s : '');
+    $('rvPar').textContent = L.path ? L.opt : '–';
+    const g = $('rvGreedy'); g.textContent = S.piece === 'P' || !isFinite(L.greedy) ? '–' : L.greedy; g.className = 'v' + (L.greedy > L.opt ? ' over' : '');
+    $('rvRoutes').textContent = L.routes;
+    $('rvSol').innerHTML = L.path ? solutionSAN(L).map((m, i) => `<li class="${L.tbit[L.path[i]] ? 'got' : ''}"><span class="n">${i + 1}.</span><span class="m">${m}</span></li>`).join('') : '<li class="empty">No route collects every target. This puzzle needs fixing.</li>';
+    $('rvNote').value = r.note || '';
+    $('rvData').textContent = JSON.stringify(E.toData(L));
+    const i = SEQ.indexOf(k); $('rvPrev').disabled = i === 0; $('rvNext').disabled = i === SEQ.length - 1;
+    $('rvGrid').innerHTML = ORDER.map(p => `<div class="rv-row"><img src="${IMG['w' + p]}" alt="${cap1(PIECES[p].name)}">` +
+      Array.from({ length:E.LEVELS }, (_, j) => { const kk = p + (j + 1), s = (rv[kk] || {}).s; return `<button class="rv-chip${s ? ' ' + s : ''}${kk === k ? ' cur' : ''}" data-k="${kk}" aria-label="${cap1(PIECES[p].name)} level ${j + 1}${s === 'ok' ? ', approved' : s === 'flag' ? ', flagged' : ''}">${j + 1}</button>`; }).join('') + '</div>').join('');
+    const ok = SEQ.filter(x => (rv[x] || {}).s === 'ok').length, fl = SEQ.filter(x => (rv[x] || {}).s === 'flag').length;
+    $('rvCount').textContent = `${ok} approved · ${fl} flagged · ${SEQ.length - ok - fl} to go`;
+  }
+  const goSeq = d => { const i = SEQ.indexOf(S.piece + S.n) + d; if (i >= 0 && i < SEQ.length){ const k = SEQ[i]; openReview(k[0], +k.slice(1)); } };
+  function mark(s){
+    const k = S.piece + S.n; rv[k] = { s, note:$('rvNote').value.trim() }; saveRv();
+    if (s === 'ok') goSeq(1); else renderReview();
+  }
+  $('rvOk').onclick = () => mark('ok');
+  $('rvFlag').onclick = () => mark('flag');
+  $('rvNote').addEventListener('input', e => { const k = S.piece + S.n; rv[k] = Object.assign(rv[k] || {}, { note:e.target.value }); saveRv(); });
+  $('rvPrev').onclick = () => goSeq(-1);
+  $('rvNext').onclick = () => goSeq(1);
+  $('rvPlay').onclick = () => startLevel(S.piece, S.n, true);
+  $('rvExit').onclick = () => startLevel(S.piece, firstOpen(S.piece));
+  $('rvGrid').addEventListener('click', e => { const c = e.target.closest('.rv-chip'); if (c) openReview(c.dataset.k[0], +c.dataset.k.slice(1)); });
+  $('sideReview').onclick = () => openReview(S.piece, S.review ? S.n : 1);
+  $('rvCopy').onclick = () => {
+    const by = s => SEQ.filter(x => ((rv[x] || {}).s || '') === s);
+    const line = x => { const n = (rv[x] || {}).note; return `${PIECES[x[0]].name} ${x.slice(1)}${n ? ': ' + n : ''}`; };
+    const text = [`Star Route review: ${by('ok').length} approved, ${by('flag').length} flagged, ${by('').length} not reviewed`,
+      '', 'FLAGGED', ...(by('flag').map(line)), '', 'APPROVED', ...(by('ok').map(line)), '', 'NOT REVIEWED', by('').join(' ')].join('\n');
+    const out = $('rvOut'); out.value = text; out.hidden = false;
+    const sel = () => { out.focus(); out.select(); };
+    try { navigator.clipboard.writeText(text).then(() => { $('rvCopy').textContent = 'Copied'; setTimeout(() => { $('rvCopy').textContent = 'Copy results'; }, 1600); }, sel); } catch (err) { sel(); }
+  };
+  $('unlockAll').onchange = e => { save.unlockAll = e.target.checked; persist(); renderLevels(); };
+
+  // ---------- shop + progress report (demo) ----------
+  const modal = $('modal');
+  const PRODUCTS = { c100:{ coins:100, label:'100 coins' }, c500:{ coins:500, label:'500 coins' }, prem:{ premium:true, label:'Star Route Plus' } };
+  let mTab = 'shop', lastFocus = null;
+  function openModal(tab, note){
+    mTab = tab; lastFocus = document.activeElement;
+    $('shopNote').textContent = note || ''; $('shopNote').hidden = !note;
+    $('toast').hidden = true;
+    renderModal(); modal.hidden = false; $('mClose').focus();
+  }
+  function closeModal(){ modal.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  function renderModal(){
+    [...$('mTabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === mTab));
+    $('shopPane').hidden = mTab !== 'shop'; $('reportPane').hidden = mTab !== 'report';
+    $('premIcon').src = IMG.wQ;
+    $('premBtn').textContent = save.premium ? 'Active' : '$4.99/mo';
+    $('premBtn').disabled = !!save.premium;
+    $('premCancel').hidden = !save.premium;
+    renderCoins(false);
+    renderReport();
+  }
+  function reportRows(){
+    return ORDER.map(p => {
+      const prog = save.progress[p] || {}, bm = save.bestMoves[p] || {};
+      let solved = 0, perfect = 0, par = 0, mv = 0;
+      for (const n in prog){ solved++; if (prog[n] === 3) perfect++; if (bm[n]){ par += E.level(p, +n).opt; mv += bm[n]; } }
+      return { p, solved, perfect, eff: mv ? Math.round(par / mv * 100) : null, hints: save.hints[p] || 0, routes: save.routes[p] || 0 };
+    });
+  }
+  function insight(rows){
+    const total = rows.reduce((a, r) => a + r.solved, 0);
+    if (!total) return 'No levels finished yet. This report fills in as you play.';
+    const c = rows.filter(r => r.solved >= 3 && r.eff != null);
+    if (c.length < 2) return 'Finish at least 3 levels with two different pieces to see strengths and weak spots.';
+    const s = c.reduce((a, b) => b.eff > a.eff ? b : a), w = c.reduce((a, b) => b.eff < a.eff ? b : a);
+    if (s.eff - w.eff < 5) return `Efficiency is even across pieces (about ${s.eff}% of par). Ready for the next tier.`;
+    const help = rows.reduce((a, r) => a + r.hints + r.routes, 0);
+    return `Most efficient with the ${PIECES[s.p].name} (${s.eff}% of par). ${cap1(PIECES[w.p].name)} routes take the most extra moves (${w.eff}%): a few more ${PIECES[w.p].name} levels would help.` + (help ? ` Help used so far: ${help} hints and route replays.` : '');
+  }
+  function table(rows){
+    return `<div class="rep-scroll"><table class="rep"><thead><tr><th>Piece</th><th>Solved</th><th>Perfect</th><th>Efficiency</th><th>Help used</th></tr></thead><tbody>` +
+      rows.map(r => `<tr><td class="pc"><img src="${IMG['w' + r.p]}" alt="">${cap1(PIECES[r.p].name)}</td><td>${r.solved}</td><td>${r.perfect}</td><td>${r.eff == null ? '–' : `<span class="eff"><span class="b"><i class="${r.eff < 80 ? 'low' : ''}" style="width:${Math.min(100, r.eff)}%"></i></span>${r.eff}%</span>`}</td><td>${r.hints} hints · ${r.routes} routes</td></tr>`).join('') +
+      `</tbody></table></div>`;
+  }
+  function renderReport(){
+    const foot = '<p class="rep-foot">Efficiency is par divided by the moves used, across solved levels. 100% means every route was the shortest possible.</p>';
+    if (!save.premium && !WEB){
+      const ex = [['R',24,20,94,1,0],['B',18,12,81,4,1],['Q',15,13,96,0,0],['K',9,5,72,3,2],['N',11,6,68,6,2],['P',7,7,100,0,0]].map(([p,s,pf,e,h,r]) => ({ p, solved:s, perfect:pf, eff:e, hints:h, routes:r }));
+      $('reportPane').innerHTML = `<div class="rep-wrap locked"><span class="ex-label">Example report</span>${table(ex)}<p class="insight">Most efficient with the queen (96% of par). Knight routes take the most extra moves (68%): a few more knight levels would help.</p><div class="paywall"><p>See which pieces you play well, and which need practice.</p><button class="button green" data-buy="prem">Get Star Route Plus</button></div></div>${foot}`;
+      return;
+    }
+    const rows = reportRows();
+    $('reportPane').innerHTML = `<div class="rep-wrap">${table(rows)}<p class="insight">${insight(rows)}</p></div>${foot}`;
+  }
+  function buyNow(id){
+    const pr = PRODUCTS[id];
+    if (pr.coins) changeCoins(pr.coins);
+    if (pr.premium){ save.premium = true; persist(); }
+    mTab = 'shop'; renderModal(); renderLevels(); render();
+    $('shopNote').hidden = true;
+    $('toast').textContent = `Demo purchase complete: ${pr.label}${pr.premium ? ' is on' : ' added'}. No money was charged.`; $('toast').hidden = false;
+  }
+  modal.addEventListener('click', e => {
+    if (e.target === modal) return closeModal();
+    const buy = e.target.closest('[data-buy]'); if (buy && !buy.disabled) return buyNow(buy.dataset.buy);
+    const tab = e.target.closest('[data-tab]'); if (tab){ mTab = tab.dataset.tab; $('shopNote').hidden = true; renderModal(); }
+  });
+  $('premCancel').onclick = () => { save.premium = false; persist(); renderModal(); renderLevels(); render(); if (tierLocked(S.n)) startLevel(S.piece, firstOpen(S.piece)); };
+  $('mClose').onclick = closeModal;
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+  $('coinBtn').onclick = () => openModal('shop');
+  $('sideShop').onclick = () => openModal('shop');
+  $('sideReport').onclick = () => openModal('report');
+
+  renderCoins(false);
+  startLevel('R', firstOpen('R'));
+})();
+</script>
+
+</body>
+</html>
